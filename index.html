@@ -923,34 +923,42 @@ function showGemAward(amount) {
 }
 
 // ── Supabase Realtime — poll for gem grants every 3s ────
+let realtimeStarted = false;
 function startRealtimeListener() {
-  if (!PLAYER_UUID) return;
-  let initialized = false;
-  let lastGems = gems;
+  if (!PLAYER_UUID || realtimeStarted) return;
+  realtimeStarted = true;
 
-  setInterval(async () => {
+  // Wait for profile to be fully loaded first
+  setTimeout(async () => {
+    // Grab the true baseline from server right now
     try {
       const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
       if (rows && rows.length > 0) {
-        const serverGems = parseInt(rows[0].gems) || 0;
-        if (!initialized) {
-          // First poll — just sync silently, no animation
-          lastGems = serverGems;
-          gems = serverGems;
-          updateHUD();
-          initialized = true;
-        } else if (serverGems > lastGems) {
-          const diff = serverGems - lastGems;
-          lastGems = serverGems;
-          gems = serverGems;
-          updateHUD();
-          showGemAward(diff);
-        } else {
-          lastGems = serverGems;
-        }
+        gems = parseInt(rows[0].gems) || 0;
+        updateHUD();
       }
     } catch(e) {}
-  }, 3000);
+
+    let lastGems = gems;
+
+    setInterval(async () => {
+      try {
+        const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
+        if (rows && rows.length > 0) {
+          const serverGems = parseInt(rows[0].gems) || 0;
+          if (serverGems > lastGems) {
+            const diff = serverGems - lastGems;
+            lastGems = serverGems;
+            gems = serverGems;
+            updateHUD();
+            showGemAward(diff);
+          } else {
+            lastGems = serverGems;
+          }
+        }
+      } catch(e) {}
+    }, 3000);
+  }, 1500); // wait 1.5s after profile loads before starting
 }
 
 
