@@ -873,8 +873,10 @@ async function createPlayer(name) {
   } catch(e) {}
 }
 
+let syncingToServer = false;
 async function syncPlayer() {
   try {
+    syncingToServer = true;
     await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
       method: 'PATCH',
       body: JSON.stringify({
@@ -883,7 +885,8 @@ async function syncPlayer() {
         gems: gems
       })
     });
-  } catch(e) {}
+    setTimeout(() => { syncingToServer = false; }, 4000);
+  } catch(e) { syncingToServer = false; }
 }
 
 // ── Gem award animation ──────────────────────────────────
@@ -928,9 +931,8 @@ function startRealtimeListener() {
   if (!PLAYER_UUID || realtimeStarted) return;
   realtimeStarted = true;
 
-  // Wait for profile to be fully loaded first
   setTimeout(async () => {
-    // Grab the true baseline from server right now
+    // Hard sync baseline from server first
     try {
       const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
       if (rows && rows.length > 0) {
@@ -939,26 +941,34 @@ function startRealtimeListener() {
       }
     } catch(e) {}
 
-    let lastGems = gems;
+    // Track last KNOWN server value — always stays in sync with server
+    let serverBaseline = gems;
 
     setInterval(async () => {
       try {
         const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
         if (rows && rows.length > 0) {
           const serverGems = parseInt(rows[0].gems) || 0;
-          if (serverGems > lastGems) {
-            const diff = serverGems - lastGems;
-            lastGems = serverGems;
+          // Only animate if server has MORE than our last known server value
+          // AND it wasn't us who changed it (local gems would already match)
+          if (!syncingToServer && serverGems > serverBaseline && serverGems > gems) {
+            const diff = serverGems - gems;
             gems = serverGems;
+            serverBaseline = serverGems;
             updateHUD();
             showGemAward(diff);
           } else {
-            lastGems = serverGems;
+            // Keep baseline in sync with whatever server has
+            serverBaseline = serverGems;
+            if (serverGems !== gems) {
+              gems = serverGems;
+              updateHUD();
+            }
           }
         }
       } catch(e) {}
     }, 3000);
-  }, 1500); // wait 1.5s after profile loads before starting
+  }, 2000);
 }
 
 
