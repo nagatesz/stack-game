@@ -171,7 +171,12 @@ canvas{display:block;cursor:pointer;background:#000;}
   <div id="streak-lbl"></div>
   <div id="gems-lbl">💎 0</div>
   <div class="ibtn" id="btn-gift">🎁</div>
-  <div class="ibtn" id="btn-shop">🛍</div>
+  <div class="ibtn" id="btn-shop">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M5 6V4.5a3 3 0 0 1 6 0V6" stroke="rgba(255,255,255,0.8)" stroke-width="1.4" stroke-linecap="round"/>
+      <rect x="2" y="6" width="12" height="8" rx="1.5" stroke="rgba(255,255,255,0.8)" stroke-width="1.4"/>
+    </svg>
+  </div>
   <div class="ibtn" id="btn-lb">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <rect x="1" y="9" width="3" height="6" rx="1" fill="rgba(255,255,255,0.7)"/>
@@ -733,8 +738,8 @@ function buildShop() {
                  <div class="sn">${p.name}</div>
                  <div class="sc${isO?' owned':''}">${isO?(isS?'✓ ACTIVE':'✓ OWNED'):`${p.cost} 💎`}</div>`;
     d.onclick=()=>{
-      if (isO) { activePal=p.id; buildShop(); }
-      else if (gems>=p.cost) { gems-=p.cost; ownedPals.add(p.id); activePal=p.id; updateHUD(); buildShop(); }
+      if (isO) { activePal=p.id; buildShop(); syncPlayer(); }
+      else if (gems>=p.cost) { gems-=p.cost; ownedPals.add(p.id); activePal=p.id; updateHUD(); buildShop(); syncPlayer(); }
       else { d.style.borderColor='#ff4444'; setTimeout(()=>d.style.borderColor='',400); }
     };
     g.appendChild(d);
@@ -742,42 +747,139 @@ function buildShop() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  LEADERBOARD  (localStorage)
+//  SUPABASE — universal leaderboard + player profiles
 // ═══════════════════════════════════════════════════════
-function lsGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch(e) { return null; } }
-function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+const SB_URL = 'https://sqiotowvntdsrldzhixa.supabase.co';
+const SB_KEY = 'sb_publishable_eWdTj_hQnIDev6KRPDCy9A_i5XqKsqO';
 
-let playerName = lsGet('stack:name') || '';
-
-function saveScore(s) {
-  if (s <= 0 || !playerName) return;
-  let entries = lsGet('stack:scores') || [];
-  entries.push({ name: playerName, score: s, date: new Date().toLocaleDateString() });
-  entries.sort((a,b) => b.score - a.score);
-  entries = entries.slice(0, 10);
-  lsSet('stack:scores', entries);
+async function sbFetch(path, opts={}) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...opts.headers
+    },
+    ...opts
+  });
+  if (!res.ok) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
-function buildLeaderboard() {
-  const list = document.getElementById('lb-list');
-  list.innerHTML = '';
-  const entries = lsGet('stack:scores') || [];
-  if (entries.length === 0) {
-    list.innerHTML = '<div class="lb-empty">No scores yet — play a game!</div>';
-    return;
+// ── UUID identity (persistent per browser) ──────────────
+function getOrCreateUUID() {
+  let id = localStorage.getItem('stack:uuid');
+  if (!id) {
+    id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+      return v.toString(16);
+    });
+    localStorage.setItem('stack:uuid', id);
   }
-  const medals = ['gold','silver','bronze'];
-  entries.forEach((e, i) => {
-    const row = document.createElement('div');
-    row.className = 'lb-row';
-    const isYou = e.name === playerName;
-    row.innerHTML = `
-      <div class="lb-rank ${medals[i]||''}">${i+1}</div>
-      <div class="lb-name" style="${isYou?'color:#ffe566':''}">${e.name}${isYou?' ★':''}</div>
-      <div class="lb-score">${e.score}</div>
-    `;
-    list.appendChild(row);
-  });
+  return id;
+}
+
+const PLAYER_UUID = getOrCreateUUID();
+let playerName = localStorage.getItem('stack:name') || '';
+
+// ── Load or create player profile ───────────────────────
+async function loadPlayer() {
+  try {
+    const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=*`);
+    if (rows && rows.length > 0) {
+      const p = rows[0];
+      playerName = p.name;
+      localStorage.setItem('stack:name', p.name);
+      // Restore gems, theme, owned palettes
+      gems = p.gems || 0;
+      activePal = p.theme || 'classic';
+      try {
+        const owned = p.owned_themes ? p.owned_themes.split(',') : ['classic'];
+        ownedPals = new Set(owned);
+      } catch(e) { ownedPals = new Set(['classic']); }
+      updateHUD();
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+async function createPlayer(name) {
+  try {
+    await sbFetch('players', {
+      method: 'POST',
+      body: JSON.stringify({
+        id: PLAYER_UUID,
+        name: name,
+        theme: 'classic',
+        owned_themes: 'classic',
+        gems: 0
+      })
+    });
+  } catch(e) {}
+}
+
+async function syncPlayer() {
+  try {
+    await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        theme: activePal,
+        owned_themes: [...ownedPals].join(','),
+        gems: gems
+      })
+    });
+  } catch(e) {}
+}
+
+// ── Save score ───────────────────────────────────────────
+async function saveScore(s) {
+  if (s <= 0 || !playerName) return;
+  try {
+    await sbFetch('scores', {
+      method: 'POST',
+      body: JSON.stringify({ player_id: PLAYER_UUID, name: playerName, score: s })
+    });
+    await syncPlayer();
+  } catch(e) {}
+}
+
+// ── Leaderboard ──────────────────────────────────────────
+async function buildLeaderboard() {
+  const list = document.getElementById('lb-list');
+  list.innerHTML = '<div class="lb-empty">Loading...</div>';
+  try {
+    // Get top 10 scores per player (best score only)
+    const rows = await sbFetch('scores?select=name,score,player_id&order=score.desc&limit=50');
+    if (!rows || rows.length === 0) {
+      list.innerHTML = '<div class="lb-empty">No scores yet — play a game!</div>';
+      return;
+    }
+    // Dedupe — keep best per player
+    const seen = new Map();
+    for (const r of rows) {
+      if (!seen.has(r.player_id)) seen.set(r.player_id, r);
+    }
+    const top = [...seen.values()].sort((a,b) => b.score-a.score).slice(0,10);
+
+    list.innerHTML = '';
+    const medals = ['gold','silver','bronze'];
+    top.forEach((e, i) => {
+      const isYou = e.player_id === PLAYER_UUID;
+      const row = document.createElement('div');
+      row.className = 'lb-row';
+      row.innerHTML = `
+        <div class="lb-rank ${medals[i]||''}">${i+1}</div>
+        <div class="lb-name" style="${isYou?'color:#ffe566':''}">${e.name}${isYou?' ★':''}</div>
+        <div class="lb-score">${e.score}</div>
+      `;
+      list.appendChild(row);
+    });
+  } catch(err) {
+    list.innerHTML = '<div class="lb-empty">Could not load scores</div>';
+  }
 }
 
 document.getElementById('btn-lb-over').onclick = () => {
@@ -790,8 +892,8 @@ document.getElementById('btn-lb').onclick = () => {
 };
 document.getElementById('btn-close-lb').onclick = () => document.getElementById('ov-lb').classList.add('hide');
 
-// Name entry
-document.getElementById('btn-name-go').onclick = () => {
+// ── Name entry ───────────────────────────────────────────
+document.getElementById('btn-name-go').onclick = async () => {
   const val = document.getElementById('name-input').value.trim().toUpperCase();
   if (!val) {
     document.getElementById('name-input').style.borderColor = '#ff4444';
@@ -799,7 +901,8 @@ document.getElementById('btn-name-go').onclick = () => {
     return;
   }
   playerName = val;
-  lsSet('stack:name', val);
+  localStorage.setItem('stack:name', val);
+  await createPlayer(val);
   document.getElementById('ov-name').classList.add('hide');
   document.getElementById('ov-start').classList.remove('hide');
 };
@@ -887,19 +990,22 @@ document.getElementById('wrap').style.visibility = 'hidden';
     sub.style.color = 'rgba(255,255,255,0.40)';
   }, 3700);
 
-  // Phase 4: tap/click fades stack screen out → name entry or game
+  // Phase 4: tap/click fades stack screen out → load profile → name entry or game
   stackScreen.addEventListener('click', () => {
     stackScreen.style.opacity = '0';
-    setTimeout(() => {
+    setTimeout(async () => {
       document.getElementById('wrap').style.visibility = 'visible';
       drawBg();
       stackScreen.remove();
-      // If no name saved yet, ask for name first
-      if (!playerName) {
+      // Try to load existing profile from Supabase
+      const found = await loadPlayer();
+      if (found) {
+        // Known player — go straight to game
+        document.getElementById('ov-start').classList.remove('hide');
+      } else {
+        // New player — ask for name
         document.getElementById('ov-name').classList.remove('hide');
         setTimeout(() => document.getElementById('name-input').focus(), 100);
-      } else {
-        document.getElementById('ov-start').classList.remove('hide');
       }
     }, 600);
   });
