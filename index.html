@@ -44,9 +44,9 @@ canvas{display:block;cursor:pointer;background:#000;}
 }
 #sfill{height:100%;width:0%;background:rgba(255,255,255,0.55);transition:width .22s;}
 
-.ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:300;}
+.ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:300;pointer-events:none;}
 .ov.hide{display:none;}
-.card{
+.card{pointer-events:auto;
   background:rgba(255,255,255,0.10);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
   border:1px solid rgba(255,255,255,0.18);border-radius:22px;padding:36px 28px 30px;
   width:256px;text-align:center;color:#fff;
@@ -623,7 +623,6 @@ function place() {
 }
 
 function commit(nb, perfect) {
-  score++;
   tower.push({...nb, color:mover.color});
 
   if (perfect) {
@@ -654,6 +653,7 @@ function commit(nb, perfect) {
     flashC='rgba(255,255,255,0.08)'; flashA=0.35;
   }
 
+  score++;
   spawnMover(); setCamTarget(); updateHUD();
 }
 
@@ -868,11 +868,12 @@ async function buildLeaderboard() {
     const medals = ['gold','silver','bronze'];
     top.forEach((e, i) => {
       const isYou = e.player_id === PLAYER_UUID;
+      const showStar = isYou && i === 0;
       const row = document.createElement('div');
       row.className = 'lb-row';
       row.innerHTML = `
         <div class="lb-rank ${medals[i]||''}">${i+1}</div>
-        <div class="lb-name" style="${isYou?'color:#ffe566':''}">${e.name}${isYou?' ★':''}</div>
+        <div class="lb-name" style="${isYou?'color:#ffe566':''}">${e.name}${showStar?' ★':''}</div>
         <div class="lb-score">${e.score}</div>
       `;
       list.appendChild(row);
@@ -994,16 +995,29 @@ document.getElementById('wrap').style.visibility = 'hidden';
   stackScreen.addEventListener('click', () => {
     stackScreen.style.opacity = '0';
     setTimeout(async () => {
-      document.getElementById('wrap').style.visibility = 'visible';
-      drawBg();
-      stackScreen.remove();
-      // Try to load existing profile from Supabase
+
+      // Fast path: localStorage already has name — skip name screen immediately
+      if (playerName) {
+        document.getElementById('wrap').style.visibility = 'visible';
+        document.getElementById('ov-start').classList.remove('hide');
+        drawBg();
+        stackScreen.remove();
+        // Still load full profile from Supabase in background to restore theme/gems
+        loadPlayer();
+        return;
+      }
+
+      // Slow path: check Supabase for existing profile
       const found = await loadPlayer();
       if (found) {
-        // Known player — go straight to game
+        document.getElementById('wrap').style.visibility = 'visible';
+        drawBg();
+        stackScreen.remove();
         document.getElementById('ov-start').classList.remove('hide');
       } else {
-        // New player — ask for name
+        document.getElementById('wrap').style.visibility = 'visible';
+        drawBg();
+        stackScreen.remove();
         document.getElementById('ov-name').classList.remove('hide');
         setTimeout(() => document.getElementById('name-input').focus(), 100);
       }
