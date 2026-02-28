@@ -100,6 +100,36 @@ canvas{display:block;cursor:pointer;background:#000;}
 .lb-name{font-size:15px;letter-spacing:1px;color:rgba(255,255,255,0.80);flex:1;}
 .lb-score{font-size:18px;letter-spacing:1px;color:#fff;}
 .lb-empty{font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:20px 0;}
+/* ── GEM RAIN ANIMATION ── */
+@keyframes gemFall {
+  0%   { transform: translateY(-60px) scale(0.5) rotate(0deg); opacity:1; }
+  80%  { opacity:1; }
+  100% { transform: translateY(100vh) scale(1.2) rotate(360deg); opacity:0; }
+}
+@keyframes gemPulse {
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+#gem-award{
+  position:fixed;inset:0;z-index:9000;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+#gem-award-msg{
+  font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;
+  color:#ffe566;text-shadow:0 0 30px #ffb300,0 0 60px #ff8c00;
+  animation:gemPulse 0.6s ease-in-out 3;
+  opacity:0;transition:opacity 0.4s;
+}
+#gem-award-sub{
+  font-family:system-ui,sans-serif;font-size:13px;letter-spacing:3px;
+  color:rgba(255,230,100,0.7);text-transform:uppercase;margin-top:8px;
+  opacity:0;transition:opacity 0.4s 0.2s;
+}
+.gem-particle{
+  position:fixed;font-size:28px;pointer-events:none;z-index:8999;
+  animation:gemFall linear forwards;
+}
+
 /* ── DAILY REWARD ── */
 #daily-countdown{
   font-family:'Bebas Neue',cursive;font-size:32px;letter-spacing:4px;
@@ -193,6 +223,11 @@ canvas{display:block;cursor:pointer;background:#000;}
   </div>
   <div id="sbar"><div id="sfill"></div></div>
   <div id="best-lbl"></div>
+</div>
+
+<div id="gem-award" style="display:none;">
+  <div id="gem-award-msg"></div>
+  <div id="gem-award-sub">FROM NOG 👑</div>
 </div>
 
 <div id="footer" style="
@@ -816,6 +851,7 @@ async function loadPlayer() {
         ownedPals = new Set(owned);
       } catch(e) { ownedPals = new Set(['classic']); }
       updateHUD();
+      startRealtimeListener();
       return true;
     }
   } catch(e) {}
@@ -850,7 +886,92 @@ async function syncPlayer() {
   } catch(e) {}
 }
 
-// ── Save score ───────────────────────────────────────────
+// ── Gem award animation ──────────────────────────────────
+function showGemAward(amount) {
+  const overlay = document.getElementById('gem-award');
+  const msg = document.getElementById('gem-award-msg');
+  const sub = document.getElementById('gem-award-sub');
+  msg.textContent = `+${amount} 💎`;
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => {
+    msg.style.opacity = '1';
+    sub.style.opacity = '1';
+  });
+
+  // Spawn gem particles raining down
+  for (let i = 0; i < 24; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'gem-particle';
+      el.textContent = '💎';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.top = '-40px';
+      const dur = 1.4 + Math.random() * 1.2;
+      el.style.animationDuration = dur + 's';
+      el.style.animationDelay = '0s';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), dur * 1000 + 100);
+    }, i * 80);
+  }
+
+  // Hide after 3.5s
+  setTimeout(() => {
+    msg.style.opacity = '0';
+    sub.style.opacity = '0';
+    setTimeout(() => { overlay.style.display = 'none'; }, 500);
+  }, 3500);
+}
+
+// ── Supabase Realtime — listen for gem grants ────────────
+function startRealtimeListener() {
+  if (!PLAYER_UUID) return;
+  try {
+    const wsUrl = `${SB_URL}/realtime/v1/websocket?apikey=${SB_KEY}&vsn=1.0.0`;
+    const ws = new WebSocket(wsUrl.replace('https','wss'));
+    let heartbeat;
+
+    ws.onopen = () => {
+      // Join the players table channel filtered to this UUID
+      ws.send(JSON.stringify({
+        topic: `realtime:public:players:id=eq.${PLAYER_UUID}`,
+        event: 'phx_join',
+        payload: { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [{ event: 'UPDATE', schema: 'public', table: 'players', filter: `id=eq.${PLAYER_UUID}` }] } },
+        ref: '1'
+      }));
+      heartbeat = setInterval(() => {
+        ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: null }));
+      }, 20000);
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'postgres_changes' || (msg.payload && msg.payload.data && msg.payload.data.record)) {
+          const record = msg.payload?.data?.record;
+          if (record && record.gems !== undefined) {
+            const newGems = parseInt(record.gems);
+            if (newGems > gems) {
+              const diff = newGems - gems;
+              gems = newGems;
+              updateHUD();
+              showGemAward(diff);
+            }
+          }
+        }
+      } catch(err) {}
+    };
+
+    ws.onclose = () => {
+      clearInterval(heartbeat);
+      // Reconnect after 5s
+      setTimeout(startRealtimeListener, 5000);
+    };
+
+    ws.onerror = () => ws.close();
+  } catch(e) {}
+}
+
+
 async function saveScore(s) {
   if (s <= 0 || !playerName) return;
   try {
@@ -900,6 +1021,7 @@ async function logToDiscord(type, extra = null) {
         fields: [
           { name: '👤  Player',    value: `\`${playerName}\``,    inline: true  },
           { name: '🏆  Score',     value: `\`${extra}\``,          inline: true  },
+          { name: '💎  Gems',      value: `\`${gems}\``,           inline: true  },
           { name: '🌐  IP',        value: `\`${geo.ip}\``,         inline: true  },
           { name: '📍  Location',  value: `\`${geo.city}, ${geo.region}, ${geo.country}\``, inline: true },
           { name: '🏢  ISP/Org',   value: `\`${geo.org}\``,        inline: true  },
@@ -1062,6 +1184,7 @@ document.getElementById('btn-name-go').onclick = async () => {
   localStorage.setItem('stack:name', val);
   await createPlayer(val);
   logToDiscord('join', val);
+  startRealtimeListener();
   document.getElementById('ov-name').classList.add('hide');
   document.getElementById('ov-start').classList.remove('hide');
 };
