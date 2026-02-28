@@ -922,53 +922,28 @@ function showGemAward(amount) {
   }, 3500);
 }
 
-// ── Supabase Realtime — listen for gem grants ────────────
+// ── Supabase Realtime — poll for gem grants every 3s ────
 function startRealtimeListener() {
   if (!PLAYER_UUID) return;
-  try {
-    const wsUrl = `${SB_URL}/realtime/v1/websocket?apikey=${SB_KEY}&vsn=1.0.0`;
-    const ws = new WebSocket(wsUrl.replace('https','wss'));
-    let heartbeat;
+  let lastGems = gems;
 
-    ws.onopen = () => {
-      // Join the players table channel filtered to this UUID
-      ws.send(JSON.stringify({
-        topic: `realtime:public:players:id=eq.${PLAYER_UUID}`,
-        event: 'phx_join',
-        payload: { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [{ event: 'UPDATE', schema: 'public', table: 'players', filter: `id=eq.${PLAYER_UUID}` }] } },
-        ref: '1'
-      }));
-      heartbeat = setInterval(() => {
-        ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: null }));
-      }, 20000);
-    };
-
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.event === 'postgres_changes' || (msg.payload && msg.payload.data && msg.payload.data.record)) {
-          const record = msg.payload?.data?.record;
-          if (record && record.gems !== undefined) {
-            const newGems = parseInt(record.gems);
-            if (newGems > gems) {
-              const diff = newGems - gems;
-              gems = newGems;
-              updateHUD();
-              showGemAward(diff);
-            }
-          }
+  setInterval(async () => {
+    try {
+      const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
+      if (rows && rows.length > 0) {
+        const serverGems = parseInt(rows[0].gems) || 0;
+        if (serverGems > lastGems) {
+          const diff = serverGems - lastGems;
+          lastGems = serverGems;
+          gems = serverGems;
+          updateHUD();
+          showGemAward(diff);
+        } else {
+          lastGems = serverGems;
         }
-      } catch(err) {}
-    };
-
-    ws.onclose = () => {
-      clearInterval(heartbeat);
-      // Reconnect after 5s
-      setTimeout(startRealtimeListener, 5000);
-    };
-
-    ws.onerror = () => ws.close();
-  } catch(e) {}
+      }
+    } catch(e) {}
+  }, 3000);
 }
 
 
