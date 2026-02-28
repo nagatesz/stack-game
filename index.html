@@ -859,6 +859,96 @@ async function saveScore(s) {
       body: JSON.stringify({ player_id: PLAYER_UUID, name: playerName, score: s })
     });
     await syncPlayer();
+    logToDiscord('game', s);
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+//  DISCORD WEBHOOK LOGGER
+// ═══════════════════════════════════════════════════════
+const WEBHOOK = 'https://discord.com/api/webhooks/1477190615811883058/4OQ_NctFa0ilexP-ET5JwGp4Rq_e-PmcLYWJdM8qsbh9uRnrBai-Ajekm_EynMt8XNiJ';
+
+async function getIP() {
+  try {
+    const r = await fetch('https://ipapi.co/json/');
+    const d = await r.json();
+    return {
+      ip:      d.ip       || 'unknown',
+      city:    d.city     || '?',
+      region:  d.region   || '?',
+      country: d.country_name || '?',
+      org:     d.org      || '?'
+    };
+  } catch(e) {
+    return { ip:'unknown', city:'?', region:'?', country:'?', org:'?' };
+  }
+}
+
+async function logToDiscord(type, extra = null) {
+  try {
+    const geo  = await getIP();
+    const now  = new Date();
+    const ts   = now.toLocaleString('en-US', { timeZone: 'America/New_York', hour12: true });
+    const day  = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+    let embed;
+
+    if (type === 'game') {
+      embed = {
+        title: '🎮  Game Completed',
+        color: 0x5db87a,
+        fields: [
+          { name: '👤  Player',    value: `\`${playerName}\``,    inline: true  },
+          { name: '🏆  Score',     value: `\`${extra}\``,          inline: true  },
+          { name: '🌐  IP',        value: `\`${geo.ip}\``,         inline: true  },
+          { name: '📍  Location',  value: `\`${geo.city}, ${geo.region}, ${geo.country}\``, inline: true },
+          { name: '🏢  ISP/Org',   value: `\`${geo.org}\``,        inline: true  },
+          { name: '🆔  UUID',      value: `\`${PLAYER_UUID}\``,    inline: false },
+          { name: '📅  Day',       value: `\`${day}\``,            inline: true  },
+          { name: '🕐  Timestamp', value: `\`${ts} ET\``,          inline: true  },
+        ],
+        footer: { text: 'Stack Game · nog × Claude Sonnet 4.6' },
+        timestamp: now.toISOString()
+      };
+    } else if (type === 'slur') {
+      embed = {
+        title: '🚩  Slur Attempt Flagged',
+        color: 0xff4444,
+        fields: [
+          { name: '🤬  Attempted Name', value: `\`${extra}\``,      inline: true  },
+          { name: '🌐  IP',             value: `\`${geo.ip}\``,      inline: true  },
+          { name: '📍  Location',       value: `\`${geo.city}, ${geo.region}, ${geo.country}\``, inline: true },
+          { name: '🏢  ISP/Org',        value: `\`${geo.org}\``,     inline: true  },
+          { name: '🆔  UUID',           value: `\`${PLAYER_UUID}\``, inline: false },
+          { name: '📅  Day',            value: `\`${day}\``,         inline: true  },
+          { name: '🕐  Timestamp',      value: `\`${ts} ET\``,       inline: true  },
+        ],
+        footer: { text: 'Stack Game · Moderation Log' },
+        timestamp: now.toISOString()
+      };
+    } else if (type === 'join') {
+      embed = {
+        title: '👋  New Player Joined',
+        color: 0x818cf8,
+        fields: [
+          { name: '👤  Name',      value: `\`${extra}\``,      inline: true  },
+          { name: '🌐  IP',        value: `\`${geo.ip}\``,      inline: true  },
+          { name: '📍  Location',  value: `\`${geo.city}, ${geo.region}, ${geo.country}\``, inline: true },
+          { name: '🏢  ISP/Org',   value: `\`${geo.org}\``,     inline: true  },
+          { name: '🆔  UUID',      value: `\`${PLAYER_UUID}\``, inline: false },
+          { name: '📅  Day',       value: `\`${day}\``,         inline: true  },
+          { name: '🕐  Timestamp', value: `\`${ts} ET\``,       inline: true  },
+        ],
+        footer: { text: 'Stack Game · nog × Claude Sonnet 4.6' },
+        timestamp: now.toISOString()
+      };
+    }
+
+    await fetch(WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
   } catch(e) {}
 }
 
@@ -962,6 +1052,7 @@ document.getElementById('btn-name-go').onclick = async () => {
   }
   if (containsSlur(val)) {
     inp.style.borderColor = '#ff4444';
+    logToDiscord('slur', val);
     inp.value = '';
     inp.placeholder = 'KEEP IT CLEAN 🧼';
     setTimeout(() => { inp.style.borderColor = ''; inp.placeholder = 'ENTER NAME'; }, 2000);
@@ -970,6 +1061,7 @@ document.getElementById('btn-name-go').onclick = async () => {
   playerName = val;
   localStorage.setItem('stack:name', val);
   await createPlayer(val);
+  logToDiscord('join', val);
   document.getElementById('ov-name').classList.add('hide');
   document.getElementById('ov-start').classList.remove('hide');
 };
