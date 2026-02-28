@@ -3,7 +3,7 @@
 A minimalist isometric block-stacking game inspired by Ketchapp's Stack. Built with vanilla HTML, CSS & JS — no frameworks.
 
 ## 🎮 Play
-**[stack-game.vercel.app](https://stack-game.vercel.app)** *(coming soon)*
+**[stack-game-virid.vercel.app](https://stack-game-virid.vercel.app)** **
 
 ## ✨ Features
 - 🧱 True isometric 3D block rendering with correct face shading
