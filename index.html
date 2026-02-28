@@ -925,6 +925,7 @@ function showGemAward(amount) {
 // ── Supabase Realtime — poll for gem grants every 3s ────
 function startRealtimeListener() {
   if (!PLAYER_UUID) return;
+  let initialized = false;
   let lastGems = gems;
 
   setInterval(async () => {
@@ -932,7 +933,13 @@ function startRealtimeListener() {
       const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
       if (rows && rows.length > 0) {
         const serverGems = parseInt(rows[0].gems) || 0;
-        if (serverGems > lastGems) {
+        if (!initialized) {
+          // First poll — just sync silently, no animation
+          lastGems = serverGems;
+          gems = serverGems;
+          updateHUD();
+          initialized = true;
+        } else if (serverGems > lastGems) {
           const diff = serverGems - lastGems;
           lastGems = serverGems;
           gems = serverGems;
