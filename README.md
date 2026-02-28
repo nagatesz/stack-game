@@ -1,31 +1,42 @@
-# 🏗️ Stack Game
+# 🏗️ Stack
 
-A minimalist isometric block-stacking game inspired by Ketchapp's Stack. Built with vanilla HTML, CSS & JS — no frameworks.
+> How high can you go?
 
-## 🎮 Play
-**[stack-game-virid.vercel.app](https://stack-game-virid.vercel.app)** 
+A minimalist isometric block-stacking game with a global leaderboard, gem shop, and daily rewards. Built with zero dependencies — just one HTML file.
+
+**[Play Now →](https://stack-game-virid.vercel.app)**
+
+---
+
+## 🎮 Gameplay
+
+Drop each block onto the one below. The overlapping part is what you keep — the rest falls off. Miss completely and it's game over.
+
+- **Perfect landing** — block grows back and you earn streak points
+- **3 perfects in a row** — streak starts, gems start dropping
+- **Speed increases** as your tower grows, then plateaus at a humanly possible cap
 
 ## ✨ Features
-- 🧱 True isometric 3D block rendering with correct face shading
-- 🔥 Streak system — chain perfect placements for bonus gems
-- 💎 Gem shop with 6 unlockable color palettes
-- 🏆 Persistent leaderboard saved to localStorage with player names
-- ✨ Perfect placement particle explosions
-- 📷 Smooth camera tracking as the tower grows
-- 🎨 Background color progression every 10 blocks
-- 📱 Polished splash screen sequence
 
-## 🕹️ How to Play
-- Press **SPACE** or **click/tap** to drop each block
-- Land it on the block below — the overlap is what you keep
-- Land within 4px of perfect = **PERFECT!** — block grows back
-- Chain 3 perfects to start earning 💎 gems
-- Spend gems in the shop to unlock new color palettes
+| Feature | Description |
+|---|---|
+| 🏆 Global Leaderboard | Universal across all players via Supabase |
+| 💎 Gem Shop | 6 unlockable color palettes |
+| 🎁 Daily Reward | +5 gems every 24 hours with live countdown |
+| 🔥 Streak System | Chain perfects for bonus gem multipliers |
+| 🎨 Theme Sync | Your palette and gems follow you across sessions |
+| 📷 Smooth Camera | Tower scrolls infinitely upward |
 
 ## 🛠️ Built With
-- Vanilla HTML / CSS / JavaScript
-- No frameworks, no dependencies
+
+- Vanilla HTML / CSS / JavaScript — no frameworks, no build step
+- [Supabase](https://supabase.com) — global leaderboard & player profiles
 - Single file deployment
 
 ## 👤 Built By
-[nog](https://github.com/nagatesz) & Claude Sonnet 4.6
+
+[nog](https://github.com/nagatesz) &amp; [Claude Sonnet 4.6](https://claude.ai)
+
+---
+
+*Inspired by Stack by Ketchapp*
