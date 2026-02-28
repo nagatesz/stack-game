@@ -884,12 +884,15 @@ async function buildLeaderboard() {
     const medals = ['gold','silver','bronze'];
     top.forEach((e, i) => {
       const isYou = e.player_id === PLAYER_UUID;
-      const showStar = isYou && i === 0;
+      const isFirst = i === 0;
+      const showStar = isYou && isFirst;
+      const highlight = isFirst || isYou;
+      const color = isFirst ? '#ffe566' : (isYou ? 'rgba(255,255,255,0.95)' : '');
       const row = document.createElement('div');
       row.className = 'lb-row';
       row.innerHTML = `
         <div class="lb-rank ${medals[i]||''}">${i+1}</div>
-        <div class="lb-name" style="${isYou?'color:#ffe566':''}">${e.name}${showStar?' ★':''}</div>
+        <div class="lb-name" style="${color?`color:${color}`:''}">${e.name}${showStar?' ★':''}</div>
         <div class="lb-score">${e.score}</div>
       `;
       list.appendChild(row);
@@ -909,12 +912,59 @@ document.getElementById('btn-lb').onclick = () => {
 };
 document.getElementById('btn-close-lb').onclick = () => document.getElementById('ov-lb').classList.add('hide');
 
+// ═══════════════════════════════════════════════════════
+//  NAME FILTER — strips spaces/symbols then checks slurs
+// ═══════════════════════════════════════════════════════
+const SLURS = [
+  // Racial
+  'nigger','nigga','nigg','nig','n1gger','n1gga','niqqer','niqqa','negr','negro',
+  'chink','chinky','gook','jap','kike','spic','spick','wetback','beaner','zipperhead',
+  'coon','porch monkey','jungle bunny','sambo','mulatto','darkie','darky',
+  'raghead','towelhead','sandnigger','camel jockey','curry muncher','paki',
+  'cracker','honky','whitey','redneck','hillbilly','gringo','guido',
+  // Homophobic / transphobic
+  'faggot','fagg','fag','f4g','f4ggot','fgt','dyke','tranny','trannies',
+  'homo','queer','sodomite','shemale',
+  // Sexist / sexual
+  'slut','sl0t','wh0re','whore','skank','cunt','c0nt','twat','bitch',
+  'hoe','thot','cum','cumslut','cumwhore','milf','dildo','cock','pussy',
+  // General hate
+  'retard','ret4rd','tard','autist','spastic','gimp','cripple',
+  'nazi','heil','hitler','kkk','klansman','antisemit','holocaust',
+  'terrorist','jihad','rape','rapist','pedophile','pedo','nonce','molest',
+];
+
+function stripBypass(str) {
+  // Lowercase, remove spaces, dots, dashes, underscores, hashtags, @, numbers substitutions
+  return str
+    .toLowerCase()
+    .replace(/[\s\.\-_#@!*]/g, '')
+    .replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e')
+    .replace(/4/g,'a').replace(/5/g,'s').replace(/\$/g,'s')
+    .replace(/8/g,'b').replace(/9/g,'g').replace(/6/g,'g')
+    .replace(/7/g,'t').replace(/\|/g,'i').replace(/ph/g,'f')
+    .replace(/ck/g,'ck').replace(/qq/g,'gg').replace(/vv/g,'w');
+}
+
+function containsSlur(name) {
+  const clean = stripBypass(name);
+  return SLURS.some(s => clean.includes(stripBypass(s)));
+}
+
 // ── Name entry ───────────────────────────────────────────
 document.getElementById('btn-name-go').onclick = async () => {
   const val = document.getElementById('name-input').value.trim().toUpperCase();
+  const inp = document.getElementById('name-input');
   if (!val) {
-    document.getElementById('name-input').style.borderColor = '#ff4444';
-    setTimeout(() => document.getElementById('name-input').style.borderColor = '', 600);
+    inp.style.borderColor = '#ff4444';
+    setTimeout(() => inp.style.borderColor = '', 600);
+    return;
+  }
+  if (containsSlur(val)) {
+    inp.style.borderColor = '#ff4444';
+    inp.value = '';
+    inp.placeholder = 'KEEP IT CLEAN 🧼';
+    setTimeout(() => { inp.style.borderColor = ''; inp.placeholder = 'ENTER NAME'; }, 2000);
     return;
   }
   playerName = val;
