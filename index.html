@@ -758,14 +758,13 @@ function getOrCreateUUID() {
 
 const PLAYER_UUID = getOrCreateUUID();
 let playerName = localStorage.getItem('stack:name') || '';
+let deviceFingerprint = localStorage.getItem('stack:fp') || '';
 
 // Generate fingerprint immediately (async, stores in module-level var)
 getFingerprint().then(fp => {
   deviceFingerprint = fp;
   localStorage.setItem('stack:fp', fp);
 });
-// Also try cached fp instantly
-deviceFingerprint = localStorage.getItem('stack:fp') || '';
 
 async function loadPlayer() {
   try {
@@ -849,7 +848,6 @@ function showGemAward(amount) {
 // ── Polling gem listener ─────────────────────────────────
 let realtimeStarted = false;
 let isBanned = false;
-let deviceFingerprint = '';
 
 // ── Device Fingerprint — survives cache clears ────────────
 async function getFingerprint() {
