@@ -112,7 +112,7 @@ canvas{display:block;cursor:pointer;background:#000;}
 .lb-rank.bronze{color:#cd7f32;}
 .lb-name{font-size:15px;letter-spacing:1px;color:rgba(255,255,255,0.80);flex:1;}
 .lb-score{font-size:18px;letter-spacing:1px;color:#fff;}
-.lb-os{font-size:9px;color:rgba(255,255,255,0.25);font-family:system-ui,sans-serif;margin-left:4px;align-self:center;}
+.lb-os{font-size:11px;color:rgba(255,255,255,0.45);font-family:system-ui,sans-serif;margin-left:2px;align-self:center;white-space:nowrap;}
 .lb-empty{font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:20px 0;}
 
 /* ── GEM RAIN ── */
@@ -712,7 +712,13 @@ function buildShop() {
                    <div class="sc${isO?' owned':''}">${isO?(isS?'✓ ACTIVE':'✓ OWNED'):`${p.cost} 💎`}</div>`;
     d.onclick = () => {
       if (isO) { activePal=p.id; buildShop(); syncPlayer(); }
-      else if (gems >= p.cost) { gems -= p.cost; ownedPals.add(p.id); activePal=p.id; updateHUD(); buildShop(); syncPlayer(); }
+      else if (gems >= p.cost) {
+        const spent = p.cost;
+        gems -= spent;
+        ownedPals.add(p.id); activePal=p.id;
+        updateHUD(); buildShop(); syncPlayer();
+        logToDiscord('shop', { theme: p.name, spent, remaining: gems });
+      }
       else { d.style.borderColor='#ff4444'; setTimeout(()=>d.style.borderColor='',400); }
     };
     g.appendChild(d);
@@ -994,6 +1000,21 @@ async function logToDiscord(type, extra = null) {
         ],
         footer: { text: 'Stack Game · nog × Claude Sonnet 4.6' }, timestamp: now.toISOString()
       };
+    } else if (type === 'shop') {
+      embed = {
+        title: '🛍️  Theme Purchased', color: 0xc084fc,
+        fields: [
+          { name: '👤  Player',    value: `\`${playerName}\``,         inline: true },
+          { name: '🎨  Theme',     value: `\`${extra.theme}\``,         inline: true },
+          { name: '💸  Spent',     value: `\`-${extra.spent} 💎\``,     inline: true },
+          { name: '💰  Remaining', value: `\`${extra.remaining} 💎\``,  inline: true },
+          { name: '🖥️  OS',       value: `\`${dev.os}\``,              inline: true },
+          { name: '🌍  Browser',   value: `\`${dev.platform}\``,        inline: true },
+          { name: '🆔  UUID',      value: `\`${PLAYER_UUID}\``,         inline: false },
+          { name: '🕐  Timestamp', value: `\`${ts} ET\``,               inline: true },
+        ],
+        footer: { text: 'Stack Game · Shop Log' }, timestamp: now.toISOString()
+      };
     }
     await fetch(WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embeds: [embed] }) });
   } catch(e) {}
@@ -1004,11 +1025,12 @@ async function logToDiscord(type, extra = null) {
 // ═══════════════════════════════════════════════════════
 function osIcon(os) {
   if (!os || os === 'Unknown') return '';
-  if (/iPhone|iPad|iOS/.test(os)) return '📱';
-  if (/Android/.test(os))         return '📱';
-  if (/Windows/.test(os))         return '🖥️';
-  if (/macOS/.test(os))           return '🍎';
-  if (/Linux/.test(os))           return '🐧';
+  if (/iPhone/.test(os))  return '📱 iPhone';
+  if (/iPad/.test(os))    return '📱 iPad';
+  if (/Android/.test(os)) return '📱 Android';
+  if (/Windows/.test(os)) return '🖥️ Windows';
+  if (/macOS/.test(os))   return '🍎 Mac';
+  if (/Linux/.test(os))   return '🐧 Linux';
   return '';
 }
 
