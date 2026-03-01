@@ -112,7 +112,7 @@ canvas{display:block;cursor:pointer;background:#000;}
 .lb-rank.bronze{color:#cd7f32;}
 .lb-name{font-size:15px;letter-spacing:1px;color:rgba(255,255,255,0.80);flex:1;}
 .lb-score{font-size:18px;letter-spacing:1px;color:#fff;}
-.lb-os{font-size:11px;color:rgba(255,255,255,0.45);font-family:system-ui,sans-serif;margin-left:2px;align-self:center;white-space:nowrap;}
+.lb-os{font-size:16px;margin-left:4px;align-self:center;}
 .lb-empty{font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:20px 0;}
 
 /* ── GEM RAIN ── */
@@ -1025,12 +1025,10 @@ async function logToDiscord(type, extra = null) {
 // ═══════════════════════════════════════════════════════
 function osIcon(os) {
   if (!os || os === 'Unknown') return '';
-  if (/iPhone/.test(os))  return '📱 iPhone';
-  if (/iPad/.test(os))    return '📱 iPad';
-  if (/Android/.test(os)) return '📱 Android';
-  if (/Windows/.test(os)) return '🖥️ Windows';
-  if (/macOS/.test(os))   return '🍎 Mac';
-  if (/Linux/.test(os))   return '🐧 Linux';
+  if (/iPhone|iPad|iOS|Android/.test(os)) return '📱';
+  if (/Windows/.test(os)) return '🖥️';
+  if (/macOS/.test(os))   return '🍎';
+  if (/Linux/.test(os))   return '🐧';
   return '';
 }
 
