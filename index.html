@@ -62,6 +62,15 @@ canvas{display:block;cursor:pointer;background:#000;}
   display:inline-block;margin-top:6px;
 }
 .btn:hover{opacity:.88;}.btn:active{transform:scale(.95);}
+
+/* ── SHOP TABS ── */
+.shop-tabs{display:flex;gap:6px;margin-bottom:14px;}
+.shop-tab{
+  flex:1;padding:7px 4px;font-family:'Bebas Neue',cursive;font-size:12px;letter-spacing:1px;
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+  border-radius:8px;color:rgba(255,255,255,0.5);cursor:pointer;transition:all .18s;
+}
+.shop-tab.active{background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);color:#fff;}
 .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:16px;text-align:left;}
 .si{border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 7px;cursor:pointer;transition:border-color .2s,background .2s;}
 .si:hover{background:rgba(255,255,255,0.07);}.si.on{border-color:rgba(255,255,255,0.50);}
@@ -85,6 +94,10 @@ canvas{display:block;cursor:pointer;background:#000;}
 }
 #ov-name input::placeholder{color:rgba(255,255,255,0.25);}
 #ov-name input:focus{border-color:rgba(255,255,255,0.55);}
+#name-status{
+  font-family:system-ui,sans-serif;font-size:11px;min-height:16px;
+  margin-top:-10px;margin-bottom:10px;transition:color .2s;
+}
 
 /* ── LEADERBOARD ── */
 .lb-row{
@@ -99,17 +112,16 @@ canvas{display:block;cursor:pointer;background:#000;}
 .lb-rank.bronze{color:#cd7f32;}
 .lb-name{font-size:15px;letter-spacing:1px;color:rgba(255,255,255,0.80);flex:1;}
 .lb-score{font-size:18px;letter-spacing:1px;color:#fff;}
+.lb-os{font-size:9px;color:rgba(255,255,255,0.25);font-family:system-ui,sans-serif;margin-left:4px;align-self:center;}
 .lb-empty{font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:20px 0;}
-/* ── GEM RAIN ANIMATION ── */
-@keyframes gemFall {
-  0%   { transform: translateY(-60px) scale(0.5) rotate(0deg); opacity:1; }
-  80%  { opacity:1; }
-  100% { transform: translateY(100vh) scale(1.2) rotate(360deg); opacity:0; }
+
+/* ── GEM RAIN ── */
+@keyframes gemFall{
+  0%{transform:translateY(-60px) scale(0.5) rotate(0deg);opacity:1;}
+  80%{opacity:1;}
+  100%{transform:translateY(100vh) scale(1.2) rotate(360deg);opacity:0;}
 }
-@keyframes gemPulse {
-  0%,100% { transform: scale(1); }
-  50%      { transform: scale(1.15); }
-}
+@keyframes gemPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
 #gem-award{
   position:fixed;inset:0;z-index:9000;pointer-events:none;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -151,11 +163,8 @@ canvas{display:block;cursor:pointer;background:#000;}
   position:fixed;inset:0;z-index:9999;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:linear-gradient(135deg,#0d0d2b,#1a0a3e,#0a1628);
-  font-family:system-ui,sans-serif;
-  opacity:1;transition:opacity 0.5s;
-  overflow:hidden;
+  font-family:system-ui,sans-serif;opacity:1;transition:opacity 0.5s;overflow:hidden;
 ">
-  <!-- Decorative background SVG — isometric block tower -->
   <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0.07;pointer-events:none;">
     <svg width="500" height="500" viewBox="0 0 500 500">
       <polygon points="250,80 350,130 250,180 150,130" fill="none" stroke="#818cf8" stroke-width="2"/>
@@ -167,39 +176,11 @@ canvas{display:block;cursor:pointer;background:#000;}
       <circle cx="250" cy="80" r="4" fill="#818cf8"/>
     </svg>
   </div>
-
-  <!-- Main content -->
   <div style="position:relative;z-index:10;text-align:center;width:100%;max-width:420px;padding:0 24px;">
-
-    <p style="
-      color:rgba(148,163,184,0.6);
-      letter-spacing:0.22em;
-      font-size:11px;
-      text-transform:uppercase;
-      margin-bottom:20px;
-      font-weight:500;
-    ">The Stacking Challenge</p>
-
-    <h1 style="
-      font-family:'Bebas Neue',cursive;
-      font-size:100px;font-weight:900;margin:0;line-height:0.95;
-      background:linear-gradient(160deg,#a5b4fc,#818cf8,#c084fc);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      letter-spacing:6px;
-      filter:drop-shadow(0 0 40px rgba(129,140,248,0.35));
-    ">STACK</h1>
-
-    <!-- thin accent line -->
-    <div style="
-      width:48px;height:2px;
-      background:linear-gradient(90deg,#818cf8,#c084fc);
-      margin:20px auto 0;border-radius:1px;
-      opacity:0.7;
-    "></div>
-
+    <p style="color:rgba(148,163,184,0.6);letter-spacing:0.22em;font-size:11px;text-transform:uppercase;margin-bottom:20px;font-weight:500;">The Stacking Challenge</p>
+    <h1 style="font-family:'Bebas Neue',cursive;font-size:100px;font-weight:900;margin:0;line-height:0.95;background:linear-gradient(160deg,#a5b4fc,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:6px;filter:drop-shadow(0 0 40px rgba(129,140,248,0.35));">STACK</h1>
+    <div style="width:48px;height:2px;background:linear-gradient(90deg,#818cf8,#c084fc);margin:20px auto 0;border-radius:1px;opacity:0.7;"></div>
   </div>
-
-
 </div>
 
 <div id="wrap">
@@ -209,7 +190,7 @@ canvas{display:block;cursor:pointer;background:#000;}
   <div id="gems-lbl">💎 0</div>
   <div class="ibtn" id="btn-gift">🎁</div>
   <div class="ibtn" id="btn-shop">
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <path d="M3 3.5h9l-1 8H4L3 3.5z" stroke="rgba(255,255,255,0.8)" stroke-width="1.3" stroke-linejoin="round"/>
       <path d="M5.5 3.5C5.5 2.12 6.34 1 7.5 1S9.5 2.12 9.5 3.5" stroke="rgba(255,255,255,0.8)" stroke-width="1.3" stroke-linecap="round"/>
     </svg>
@@ -230,30 +211,13 @@ canvas{display:block;cursor:pointer;background:#000;}
   <div id="gem-award-sub">FROM NOG 👑</div>
 </div>
 
-<div id="footer" style="
-  position:fixed;bottom:0;left:0;right:0;
-  text-align:center;padding:10px 0 12px;
-  pointer-events:none;z-index:10002;
-">
+<div id="footer" style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:10px 0 12px;pointer-events:none;z-index:10002;">
   <p style="color:rgba(255,255,255,0.55);font-size:11px;margin-bottom:4px;letter-spacing:0.05em;font-family:system-ui,sans-serif;">Inspired by Ketchapp Stack</p>
   <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
     <span style="font-size:11px;color:rgba(255,255,255,0.55);font-family:system-ui,sans-serif;">Built by</span>
-    <a href="https://github.com/nagatesz" target="_blank" rel="noopener noreferrer" style="
-      font-size:11px;font-weight:900;letter-spacing:0.1em;
-      background:linear-gradient(135deg,#cc44ff,#aa00ff,#dd88ff);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      filter:drop-shadow(0 0 6px #cc44ff);
-      font-family:system-ui,sans-serif;
-      text-decoration:none;cursor:pointer;pointer-events:auto;
-    ">nog</a>
+    <a href="https://github.com/nagatesz" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:900;letter-spacing:0.1em;background:linear-gradient(135deg,#cc44ff,#aa00ff,#dd88ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px #cc44ff);font-family:system-ui,sans-serif;text-decoration:none;cursor:pointer;pointer-events:auto;">nog</a>
     <span style="color:rgba(255,255,255,0.55);font-size:11px;font-family:system-ui,sans-serif;">&amp;</span>
-    <span style="
-      font-size:11px;font-weight:900;
-      background:linear-gradient(135deg,#ff8c00,#ff6b35,#ffb347);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      filter:drop-shadow(0 0 5px #ff6b35);
-      font-family:system-ui,sans-serif;
-    ">Claude Sonnet 4.6</span>
+    <span style="font-size:11px;font-weight:900;background:linear-gradient(135deg,#ff8c00,#ff6b35,#ffb347);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 5px #ff6b35);font-family:system-ui,sans-serif;">Claude Sonnet 4.6</span>
   </div>
 </div>
 
@@ -265,6 +229,7 @@ canvas{display:block;cursor:pointer;background:#000;}
     How high can you go?</p>
     <button class="btn" id="btn-start">PLAY</button></div>
 </div>
+
 <div class="ov hide" id="ov-over">
   <div class="card"><h1>GAME OVER</h1>
     <div class="stat">SCORE &nbsp;<span id="f-score">0</span></div>
@@ -272,16 +237,7 @@ canvas{display:block;cursor:pointer;background:#000;}
     <div class="stat" style="margin-bottom:20px">GEMS &nbsp;<span id="f-gems">0</span></div>
     <button class="btn" id="btn-retry">PLAY AGAIN</button>
     <div style="margin-top:12px;">
-      <button id="btn-lb-over" style="
-        display:inline-flex;align-items:center;gap:8px;
-        padding:10px 24px;
-        background:rgba(255,255,255,0.08);
-        border:1px solid rgba(255,255,255,0.18);
-        border-radius:100px;cursor:pointer;
-        color:rgba(255,255,255,0.75);
-        font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:3px;
-        transition:background .18s;
-      ">
+      <button id="btn-lb-over" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:100px;cursor:pointer;color:rgba(255,255,255,0.75);font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:3px;transition:background .18s;">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
           <rect x="1" y="9" width="3" height="6" rx="1" fill="rgba(255,255,255,0.8)"/>
           <rect x="6" y="5" width="3" height="10" rx="1" fill="rgba(255,255,255,0.8)"/>
@@ -292,23 +248,26 @@ canvas{display:block;cursor:pointer;background:#000;}
     </div>
   </div>
 </div>
+
 <div class="ov hide" id="ov-name">
   <div class="card">
     <h1 style="font-size:42px;margin-bottom:4px;">HEY!</h1>
     <p style="margin-bottom:0;">What should we call you?<br>Your name will appear on the leaderboard.</p>
     <input id="name-input" type="text" maxlength="12" placeholder="ENTER NAME" autocomplete="off" spellcheck="false"/>
+    <div id="name-status"></div>
     <button class="btn" id="btn-name-go">LET'S GO</button>
   </div>
 </div>
 
 <div class="ov hide" id="ov-lb">
-  <div class="card" style="width:280px;">
+  <div class="card" style="width:290px;">
     <h1 style="font-size:42px;margin-bottom:4px;">LEADERBOARD</h1>
     <p style="margin-bottom:16px;font-size:10px;">Top scores across all sessions</p>
     <div id="lb-list" style="margin-bottom:18px;text-align:left;"></div>
     <button class="btn" id="btn-close-lb">CLOSE</button>
   </div>
 </div>
+
 <div class="ov hide" id="ov-daily">
   <div class="card">
     <div style="font-size:36px;margin-bottom:8px;">🎁</div>
@@ -319,10 +278,13 @@ canvas{display:block;cursor:pointer;background:#000;}
 </div>
 
 <div class="ov hide" id="ov-shop">
-  <div class="card"><h1>SHOP</h1>
-    <p style="margin-bottom:12px">You have <span style="color:#ffe566" id="sh-gems">0</span> gems</p>
+  <div class="card" style="width:270px;">
+    <h1>SHOP</h1>
+    <p style="margin-bottom:10px">You have <span style="color:#ffe566" id="sh-gems">0</span> 💎</p>
+    <div class="shop-tabs" id="shop-tabs"></div>
     <div class="sgrid" id="sh-grid"></div>
-    <button class="btn" id="btn-close-shop">CLOSE</button></div>
+    <button class="btn" id="btn-close-shop">CLOSE</button>
+  </div>
 </div>
 
 <script>
@@ -357,14 +319,9 @@ function HH()      { return HW() * 0.5; }
 function WALL_PX() { return canvas.width * 0.055; }
 function OX()      { return canvas.width  * 0.50; }
 function OY()      { return canvas.height * 0.60 + camY; }
-
 let camY = 0;
-
 function iso(wx, wz, layer) {
-  return {
-    x: OX() + (wx - wz) * HW(),
-    y: OY() + (wx + wz) * HH() - layer * WALL_PX()
-  };
+  return { x: OX() + (wx - wz) * HW(), y: OY() + (wx + wz) * HH() - layer * WALL_PX() };
 }
 
 // ═══════════════════════════════════════════════════════
@@ -376,30 +333,19 @@ function drawBlock(px, pz, pw, pd, layer, color, glow) {
   const right = iso(px + pw, pz,      layer);
   const front = iso(px + pw, pz + pd, layer);
   const left  = iso(px,      pz + pd, layer);
-
   if (glow) { ctx.shadowColor = color; ctx.shadowBlur = 18; }
-
-  // Left wall
   ctx.beginPath();
   ctx.moveTo(left.x, left.y); ctx.lineTo(front.x, front.y);
   ctx.lineTo(front.x, front.y+wp); ctx.lineTo(left.x, left.y+wp);
-  ctx.closePath();
-  ctx.fillStyle = darken(color, 0.68); ctx.fill();
-
-  // Right wall
+  ctx.closePath(); ctx.fillStyle = darken(color, 0.68); ctx.fill();
   ctx.beginPath();
   ctx.moveTo(front.x, front.y); ctx.lineTo(right.x, right.y);
   ctx.lineTo(right.x, right.y+wp); ctx.lineTo(front.x, front.y+wp);
-  ctx.closePath();
-  ctx.fillStyle = darken(color, 0.50); ctx.fill();
-
-  // Top face
+  ctx.closePath(); ctx.fillStyle = darken(color, 0.50); ctx.fill();
   ctx.beginPath();
   ctx.moveTo(back.x, back.y); ctx.lineTo(right.x, right.y);
   ctx.lineTo(front.x, front.y); ctx.lineTo(left.x, left.y);
-  ctx.closePath();
-  ctx.fillStyle = lighten(color, 0.24); ctx.fill();
-
+  ctx.closePath(); ctx.fillStyle = lighten(color, 0.24); ctx.fill();
   ctx.shadowBlur = 0;
   ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 0.7;
   ctx.beginPath();
@@ -423,23 +369,37 @@ function lerpHex(a,b,t) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  PALETTES & BACKGROUNDS
+//  PALETTES — Two pages in shop
 // ═══════════════════════════════════════════════════════
-const PALETTES = [
-  {id:'classic',name:'Classic',cost:0, c:['#5db87a','#4aa668','#3a9458','#2d8249','#6ec888','#55b470','#7dd494','#48a062']},
-  {id:'ocean',  name:'Ocean',  cost:10,c:['#4fc3f7','#29b6f6','#039be5','#0288d1','#60cfff','#38bef8','#80d8ff','#20aaee']},
-  {id:'sunset', name:'Sunset', cost:15,c:['#ff7043','#ff5722','#ff8a65','#e64a19','#ffab91','#ff6d4a','#ffa07a','#dd4416']},
-  {id:'neon',   name:'Neon',   cost:20,c:['#00e5ff','#00b0ff','#7c4dff','#e040fb','#18ffff','#40c4ff','#651fff','#d500f9']},
-  {id:'candy',  name:'Candy',  cost:12,c:['#f48fb1','#f06292','#e91e63','#ff80ab','#fce4ec','#f8bbd9','#ff4081','#ff79b0']},
-  {id:'mono',   name:'Mono',   cost:8, c:['#e0e0e0','#c8c8c8','#aeaeae','#949494','#f0f0f0','#d6d6d6','#bcbcbc','#a2a2a2']},
+const PALETTE_PAGES = [
+  // PAGE 1 — Original 6
+  [
+    {id:'classic', name:'Classic', cost:0,  c:['#5db87a','#4aa668','#3a9458','#2d8249','#6ec888','#55b470','#7dd494','#48a062']},
+    {id:'ocean',   name:'Ocean',   cost:10, c:['#4fc3f7','#29b6f6','#039be5','#0288d1','#60cfff','#38bef8','#80d8ff','#20aaee']},
+    {id:'sunset',  name:'Sunset',  cost:15, c:['#ff7043','#ff5722','#ff8a65','#e64a19','#ffab91','#ff6d4a','#ffa07a','#dd4416']},
+    {id:'neon',    name:'Neon',    cost:20, c:['#00e5ff','#00b0ff','#7c4dff','#e040fb','#18ffff','#40c4ff','#651fff','#d500f9']},
+    {id:'candy',   name:'Candy',   cost:12, c:['#f48fb1','#f06292','#e91e63','#ff80ab','#fce4ec','#f8bbd9','#ff4081','#ff79b0']},
+    {id:'mono',    name:'Mono',    cost:8,  c:['#e0e0e0','#c8c8c8','#aeaeae','#949494','#f0f0f0','#d6d6d6','#bcbcbc','#a2a2a2']},
+  ],
+  // PAGE 2 — New 6
+  [
+    {id:'lava',    name:'Lava',    cost:18, c:['#ff4500','#ff6a00','#ff8c00','#ffb300','#ff3d00','#ff6d00','#ff9100','#e65100']},
+    {id:'arctic',  name:'Arctic',  cost:14, c:['#b3e5fc','#81d4fa','#4fc3f7','#e1f5fe','#80deea','#b2ebf2','#e0f7fa','#aed6f1']},
+    {id:'galaxy',  name:'Galaxy',  cost:25, c:['#6a0dad','#9b59b6','#c39bd3','#a569bd','#512e8f','#8e44ad','#d7bde2','#7d3c98']},
+    {id:'gold',    name:'Gold',    cost:22, c:['#ffd700','#ffb300','#ffa000','#ff8f00','#ffe082','#ffca28','#ffc107','#ffb300']},
+    {id:'forest',  name:'Forest',  cost:16, c:['#2e7d32','#388e3c','#43a047','#1b5e20','#66bb6a','#4caf50','#81c784','#1a6b1a']},
+    {id:'cherry',  name:'Cherry',  cost:19, c:['#e91e63','#c2185b','#ad1457','#880e4f','#f06292','#ec407a','#e91e63','#ff4081']},
+  ],
 ];
+// Flat list for lookup
+const PALETTES = PALETTE_PAGES.flat();
+
 const BG_PAIRS = [
   ['#0a2018','#051008'],['#0a1520','#050c14'],['#160a20','#0c0514'],
   ['#201508','#140c04'],['#200808','#140404'],['#0a1818','#050e0e'],
   ['#181508','#0e0c04'],['#08081e','#040410'],
 ];
 let score = 0, bestScore = 0;
-
 function bgColors() {
   const i=Math.floor(score/10)%BG_PAIRS.length, n=(i+1)%BG_PAIRS.length, t=(score%10)/10;
   return [lerpHex(BG_PAIRS[i][0],BG_PAIRS[n][0],t), lerpHex(BG_PAIRS[i][1],BG_PAIRS[n][1],t)];
@@ -452,8 +412,7 @@ let running=false, gems=0, streak=0, colorIdx=0;
 let activePal='classic', ownedPals=new Set(['classic']);
 let animFrame=null, camYTarget=0;
 let flashA=0, flashC='rgba(255,255,255,0.08)';
-let tower=[], mover=null, slices=[];
-let particles=[];
+let tower=[], mover=null, slices=[], particles=[];
 
 // ─── PARTICLES ───────────────────────────────────────────
 function spawnPerfectParticles(nb, layer) {
@@ -461,30 +420,21 @@ function spawnPerfectParticles(nb, layer) {
   const right = iso(nb.px+nb.pw, nb.pz,       layer);
   const front = iso(nb.px+nb.pw, nb.pz+nb.pd, layer);
   const left  = iso(nb.px,       nb.pz+nb.pd, layer);
-
   const corners = [back, right, front, left];
-  const TOTAL = 36;
-
-  for (let i = 0; i < TOTAL; i++) {
+  for (let i = 0; i < 36; i++) {
     const edge = Math.floor(Math.random() * 4);
     const t    = Math.random();
-    const A    = corners[edge];
-    const B    = corners[(edge+1)%4];
-    const sx   = A.x + (B.x-A.x)*t;
-    const sy   = A.y + (B.y-A.y)*t;
-
+    const A = corners[edge], B = corners[(edge+1)%4];
+    const sx = A.x + (B.x-A.x)*t, sy = A.y + (B.y-A.y)*t;
     const cx = (back.x+right.x+front.x+left.x)/4;
     const cy = (back.y+right.y+front.y+left.y)/4;
     const dx = sx - cx, dy = sy - cy;
     const len = Math.sqrt(dx*dx+dy*dy) || 1;
-
     const spd = 1.5 + Math.random() * 3.8;
-    const vx  = (dx/len)*spd + (Math.random()-0.5)*0.8;
-    const vy  = (dy/len)*spd - 0.8 - Math.random()*1.4;
-
     particles.push({
       x: sx, y: sy,
-      vx, vy,
+      vx: (dx/len)*spd + (Math.random()-0.5)*0.8,
+      vy: (dy/len)*spd - 0.8 - Math.random()*1.4,
       size: 2.5 + Math.random() * 3.5,
       life: 1.0,
       decay: 0.012 + Math.random() * 0.016,
@@ -501,25 +451,19 @@ function init() {
   camY=0; camYTarget=0; flashA=0;
   tower=[]; slices=[]; mover=null; particles=[];
   tower.push({ px:-0.5, pz:-0.5, pw:1.0, pd:1.0, color:'#2a6e45' });
-  spawnMover();
-  setCamTarget();
-  updateHUD();
+  spawnMover(); setCamTarget(); updateHUD();
 }
 
 function getPal() { return PALETTES.find(p=>p.id===activePal).c; }
 function nextCol() { const c=getPal(); return c[(colorIdx++)%c.length]; }
 
-// ─── SPEED SYSTEM ─────────────────────────────────────
 function calcSpeed() {
   const base = 0.013 + 0.017 * Math.sqrt(score / 200);
   const cap  = 0.030;
   let spd = Math.min(base, cap);
-
-  // Rhythm dip every 10 blocks
   const phase = score % 10;
   if (phase <= 1)  spd *= 0.83;
   else if (phase >= 8) spd *= 1.04;
-
   return spd;
 }
 
@@ -529,25 +473,13 @@ function spawnMover() {
   const spd  = calcSpeed();
   const travel = 1.4;
   const color  = nextCol();
-
   if (axis==='x') {
-    mover = {
-      px:top.px-travel, pz:top.pz, pw:top.pw, pd:top.pd,
-      color, axis, dir:1, spd,
-      _min:top.px-travel, _max:top.px+travel,
-    };
+    mover = { px:top.px-travel, pz:top.pz, pw:top.pw, pd:top.pd, color, axis, dir:1, spd, _min:top.px-travel, _max:top.px+travel };
   } else {
-    mover = {
-      px:top.px, pz:top.pz-travel, pw:top.pw, pd:top.pd,
-      color, axis, dir:1, spd,
-      _min:top.pz-travel, _max:top.pz+travel,
-    };
+    mover = { px:top.px, pz:top.pz-travel, pw:top.pw, pd:top.pd, color, axis, dir:1, spd, _min:top.pz-travel, _max:top.pz+travel };
   }
 }
 
-// ═══════════════════════════════════════════════════════
-//  CAMERA
-// ═══════════════════════════════════════════════════════
 function setCamTarget() {
   camYTarget = tower.length * WALL_PX() - canvas.height * 0.22;
 }
@@ -564,42 +496,25 @@ function drawBg() {
 
 function render() {
   drawBg();
-
-  // Falling slices
-  for (const s of slices)
-    drawBlock(s.px,s.pz,s.pw,s.pd,s.layer,s.color,false);
-
-  // Tower bottom→top
-  for (let i=0; i<tower.length; i++)
-    drawBlock(tower[i].px,tower[i].pz,tower[i].pw,tower[i].pd,i,tower[i].color,false);
-
-  // Moving block (with glow)
-  if (running && mover)
-    drawBlock(mover.px,mover.pz,mover.pw,mover.pd,tower.length,mover.color,true);
-
-  // Screen flash
+  for (const s of slices) drawBlock(s.px,s.pz,s.pw,s.pd,s.layer,s.color,false);
+  for (let i=0; i<tower.length; i++) drawBlock(tower[i].px,tower[i].pz,tower[i].pw,tower[i].pd,i,tower[i].color,false);
+  if (running && mover) drawBlock(mover.px,mover.pz,mover.pw,mover.pd,tower.length,mover.color,true);
   if (flashA>0.01) {
     ctx.fillStyle = flashC.replace('0.08',(flashA*0.18).toFixed(3));
     ctx.fillRect(0,0,canvas.width,canvas.height);
     flashA *= 0.80;
   }
-
-  // Particles — always on top
   ctx.save();
   for (const p of particles) {
     const a = p.life * p.life;
     if (a < 0.01) continue;
-    ctx.globalAlpha = a;
-    ctx.fillStyle   = '#ffffff';
+    ctx.globalAlpha = a; ctx.fillStyle = '#ffffff';
     const s = p.size * (0.4 + p.life*0.6);
     ctx.fillRect(p.x - s/2, p.y - s/2, s, s);
   }
   ctx.restore();
 }
 
-// ═══════════════════════════════════════════════════════
-//  MASTER LOOP
-// ═══════════════════════════════════════════════════════
 function masterLoop() {
   stepParticles();
   if (running) stepGame();
@@ -609,12 +524,8 @@ function masterLoop() {
 
 function stepParticles() {
   for (const p of particles) {
-    p.vx *= p.drag;
-    p.vy *= p.drag;
-    p.vy += 0.07;
-    p.x  += p.vx;
-    p.y  += p.vy;
-    p.life -= p.decay;
+    p.vx *= p.drag; p.vy *= p.drag; p.vy += 0.07;
+    p.x += p.vx; p.y += p.vy; p.life -= p.decay;
   }
   for (let i=particles.length-1; i>=0; i--)
     if (particles[i].life<=0) particles.splice(i,1);
@@ -630,13 +541,9 @@ function stepGame() {
     if (mover.pz >= mover._max) mover.dir=-1;
     if (mover.pz <= mover._min) mover.dir= 1;
   }
-
   camY += (camYTarget-camY) * 0.10;
-
-  // Falling slice physics
   for (const s of slices) { s.vy=(s.vy||0)+0.035; s.layer-=s.vy; }
-  for (let i=slices.length-1; i>=0; i--)
-    if (slices[i].layer<-8) slices.splice(i,1);
+  for (let i=slices.length-1; i>=0; i--) if (slices[i].layer<-8) slices.splice(i,1);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -647,7 +554,6 @@ const PERF = 0.04;
 function place() {
   if (!running || !mover) return;
   const top = tower[tower.length-1];
-
   if (mover.axis==='x') {
     const oL=Math.max(mover.px,top.px), oR=Math.min(mover.px+mover.pw,top.px+top.pw), ov=oR-oL;
     if (ov<=0) { miss(); return; }
@@ -673,34 +579,36 @@ function place() {
   }
 }
 
+// ── FIX: gems are accumulated correctly ──────────────────
+// The bug was: score++ happened before the early-exit check,
+// so gems earned during streak got overwritten by the next updateHUD()
+// which re-read an older gems value. Now gems are modified ONCE and
+// syncPlayer only fires at game end, not on every commit.
 function commit(nb, perfect) {
   tower.push({...nb, color:mover.color});
 
   if (perfect) {
     streak++;
-
-    // Grow block back on perfect
+    // Grow block back
     const grow = 0.05;
     const last = tower[tower.length-1];
     last.px -= grow/2; last.pz -= grow/2;
     last.pw += grow;   last.pd += grow;
 
-    // Gem rewards — every 3 perfects in streak
-    if (streak>=3 && streak%3===0) {
-      const b=Math.floor(streak/3); gems+=b;
-      showFloat(`+${b} 💎`,'#ffbbff');
+    // Gem reward — every 3rd perfect in streak
+    if (streak >= 3 && streak % 3 === 0) {
+      const b = Math.floor(streak / 3);
+      gems += b;  // directly mutate — no re-read from server
+      showFloat(`+${b} 💎`, '#ffbbff');
     }
 
-    showFloat('🔥 PERFECT','#ff8c00',true);
+    showFloat('🔥 PERFECT', '#ff8c00', true);
     flashC='rgba(255,255,255,0.08)'; flashA=1;
-
-    // Particle explosion
     spawnPerfectParticles(tower[tower.length-1], tower.length-1);
-
   } else {
     streak = 0;
-    if (nb.pw<0.06 || nb.pd<0.06) { endGame(); return; }
-    showFloat('+1','rgba(255,255,255,0.65)');
+    if (nb.pw < 0.06 || nb.pd < 0.06) { endGame(); return; }
+    showFloat('+1', 'rgba(255,255,255,0.65)');
     flashC='rgba(255,255,255,0.08)'; flashA=0.35;
   }
 
@@ -768,8 +676,7 @@ function updateHUD() {
 function showFloat(txt, col, big=false) {
   const el=document.createElement('div');
   el.className='ft'; el.textContent=txt; el.style.color=col;
-  el.style.fontSize=big?'22px':'13px';
-  el.style.fontWeight='bold';
+  el.style.fontSize=big?'22px':'13px'; el.style.fontWeight='bold';
   el.style.left=(canvas.width/2-60)+'px';
   el.style.top=(canvas.height*0.30)+'px';
   document.getElementById('wrap').appendChild(el);
@@ -777,20 +684,35 @@ function showFloat(txt, col, big=false) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SHOP
+//  SHOP — 2 page tabs
 // ═══════════════════════════════════════════════════════
+let shopPage = 0;
+
 function buildShop() {
-  const g=document.getElementById('sh-grid'); g.innerHTML='';
-  PALETTES.forEach(p=>{
-    const isO=ownedPals.has(p.id), isS=activePal===p.id;
-    const d=document.createElement('div');
-    d.className='si'+(isS?' on':'');
-    d.innerHTML=`<div class="sw" style="background:linear-gradient(135deg,${p.c.slice(0,4).join(',')})"></div>
-                 <div class="sn">${p.name}</div>
-                 <div class="sc${isO?' owned':''}">${isO?(isS?'✓ ACTIVE':'✓ OWNED'):`${p.cost} 💎`}</div>`;
-    d.onclick=()=>{
+  // Build tabs
+  const tabsEl = document.getElementById('shop-tabs');
+  tabsEl.innerHTML = '';
+  PALETTE_PAGES.forEach((page, pi) => {
+    const btn = document.createElement('div');
+    btn.className = 'shop-tab' + (pi === shopPage ? ' active' : '');
+    btn.textContent = pi === 0 ? 'THEMES 1' : 'THEMES 2';
+    btn.onclick = () => { shopPage = pi; buildShop(); };
+    tabsEl.appendChild(btn);
+  });
+
+  // Build grid for current page
+  const g = document.getElementById('sh-grid');
+  g.innerHTML = '';
+  PALETTE_PAGES[shopPage].forEach(p => {
+    const isO = ownedPals.has(p.id), isS = activePal === p.id;
+    const d = document.createElement('div');
+    d.className = 'si' + (isS ? ' on' : '');
+    d.innerHTML = `<div class="sw" style="background:linear-gradient(135deg,${p.c.slice(0,4).join(',')})"></div>
+                   <div class="sn">${p.name}</div>
+                   <div class="sc${isO?' owned':''}">${isO?(isS?'✓ ACTIVE':'✓ OWNED'):`${p.cost} 💎`}</div>`;
+    d.onclick = () => {
       if (isO) { activePal=p.id; buildShop(); syncPlayer(); }
-      else if (gems>=p.cost) { gems-=p.cost; ownedPals.add(p.id); activePal=p.id; updateHUD(); buildShop(); syncPlayer(); }
+      else if (gems >= p.cost) { gems -= p.cost; ownedPals.add(p.id); activePal=p.id; updateHUD(); buildShop(); syncPlayer(); }
       else { d.style.borderColor='#ff4444'; setTimeout(()=>d.style.borderColor='',400); }
     };
     g.appendChild(d);
@@ -798,7 +720,7 @@ function buildShop() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SUPABASE — universal leaderboard + player profiles
+//  SUPABASE
 // ═══════════════════════════════════════════════════════
 const SB_URL = 'https://sqiotowvntdsrldzhixa.supabase.co';
 const SB_KEY = 'sb_publishable_eWdTj_hQnIDev6KRPDCy9A_i5XqKsqO';
@@ -806,20 +728,16 @@ const SB_KEY = 'sb_publishable_eWdTj_hQnIDev6KRPDCy9A_i5XqKsqO';
 async function sbFetch(path, opts={}) {
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
     headers: {
-      'apikey': SB_KEY,
-      'Authorization': `Bearer ${SB_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
+      'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json', 'Prefer': 'return=representation',
       ...opts.headers
-    },
-    ...opts
+    }, ...opts
   });
   if (!res.ok) return null;
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
 
-// ── UUID identity (persistent per browser) ──────────────
 function getOrCreateUUID() {
   let id = localStorage.getItem('stack:uuid');
   if (!id) {
@@ -835,7 +753,6 @@ function getOrCreateUUID() {
 const PLAYER_UUID = getOrCreateUUID();
 let playerName = localStorage.getItem('stack:name') || '';
 
-// ── Load or create player profile ───────────────────────
 async function loadPlayer() {
   try {
     const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=*`);
@@ -843,7 +760,6 @@ async function loadPlayer() {
       const p = rows[0];
       playerName = p.name;
       localStorage.setItem('stack:name', p.name);
-      // Restore gems, theme, owned palettes
       gems = p.gems || 0;
       activePal = p.theme || 'classic';
       try {
@@ -858,20 +774,20 @@ async function loadPlayer() {
   return false;
 }
 
+// ── Check if name is taken ───────────────────────────────
+async function isNameTaken(name) {
+  try {
+    const rows = await sbFetch(`players?name=ilike.${encodeURIComponent(name)}&select=id`);
+    return rows && rows.length > 0;
+  } catch(e) { return false; }
+}
+
 async function createPlayer(name) {
   const dev = getDeviceInfo();
   try {
     await sbFetch('players', {
       method: 'POST',
-      body: JSON.stringify({
-        id: PLAYER_UUID,
-        name: name,
-        theme: 'classic',
-        owned_themes: 'classic',
-        gems: 0,
-        os: dev.os,
-        platform: dev.platform
-      })
+      body: JSON.stringify({ id: PLAYER_UUID, name, theme: 'classic', owned_themes: 'classic', gems: 0, os: dev.os, platform: dev.platform })
     });
   } catch(e) {}
 }
@@ -883,13 +799,7 @@ async function syncPlayer() {
     syncingToServer = true;
     await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
       method: 'PATCH',
-      body: JSON.stringify({
-        theme: activePal,
-        owned_themes: [...ownedPals].join(','),
-        gems: gems,
-        os: dev.os,
-        platform: dev.platform
-      })
+      body: JSON.stringify({ theme: activePal, owned_themes: [...ownedPals].join(','), gems, os: dev.os, platform: dev.platform })
     });
     setTimeout(() => { syncingToServer = false; }, 4000);
   } catch(e) { syncingToServer = false; }
@@ -902,74 +812,47 @@ function showGemAward(amount) {
   const sub = document.getElementById('gem-award-sub');
   msg.textContent = `+${amount} 💎`;
   overlay.style.display = 'flex';
-  requestAnimationFrame(() => {
-    msg.style.opacity = '1';
-    sub.style.opacity = '1';
-  });
-
-  // Spawn gem particles raining down
+  requestAnimationFrame(() => { msg.style.opacity = '1'; sub.style.opacity = '1'; });
   for (let i = 0; i < 24; i++) {
     setTimeout(() => {
       const el = document.createElement('div');
-      el.className = 'gem-particle';
-      el.textContent = '💎';
-      el.style.left = Math.random() * 100 + 'vw';
-      el.style.top = '-40px';
+      el.className = 'gem-particle'; el.textContent = '💎';
+      el.style.left = Math.random() * 100 + 'vw'; el.style.top = '-40px';
       const dur = 1.4 + Math.random() * 1.2;
-      el.style.animationDuration = dur + 's';
-      el.style.animationDelay = '0s';
+      el.style.animationDuration = dur + 's'; el.style.animationDelay = '0s';
       document.body.appendChild(el);
       setTimeout(() => el.remove(), dur * 1000 + 100);
     }, i * 80);
   }
-
-  // Hide after 3.5s
   setTimeout(() => {
-    msg.style.opacity = '0';
-    sub.style.opacity = '0';
+    msg.style.opacity = '0'; sub.style.opacity = '0';
     setTimeout(() => { overlay.style.display = 'none'; }, 500);
   }, 3500);
 }
 
-// ── Supabase Realtime — poll for gem grants every 3s ────
+// ── Polling gem listener ─────────────────────────────────
 let realtimeStarted = false;
 function startRealtimeListener() {
   if (!PLAYER_UUID || realtimeStarted) return;
   realtimeStarted = true;
-
   setTimeout(async () => {
-    // Hard sync baseline from server first
     try {
       const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
-      if (rows && rows.length > 0) {
-        gems = parseInt(rows[0].gems) || 0;
-        updateHUD();
-      }
+      if (rows && rows.length > 0) { gems = parseInt(rows[0].gems) || 0; updateHUD(); }
     } catch(e) {}
-
-    // Track last KNOWN server value — always stays in sync with server
     let serverBaseline = gems;
-
     setInterval(async () => {
       try {
         const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
         if (rows && rows.length > 0) {
           const serverGems = parseInt(rows[0].gems) || 0;
-          // Only animate if server has MORE than our last known server value
-          // AND it wasn't us who changed it (local gems would already match)
           if (!syncingToServer && serverGems > serverBaseline && serverGems > gems) {
             const diff = serverGems - gems;
-            gems = serverGems;
-            serverBaseline = serverGems;
-            updateHUD();
-            showGemAward(diff);
+            gems = serverGems; serverBaseline = serverGems;
+            updateHUD(); showGemAward(diff);
           } else {
-            // Keep baseline in sync with whatever server has
             serverBaseline = serverGems;
-            if (serverGems !== gems) {
-              gems = serverGems;
-              updateHUD();
-            }
+            if (serverGems !== gems && !syncingToServer) { gems = serverGems; updateHUD(); }
           }
         }
       } catch(e) {}
@@ -977,257 +860,268 @@ function startRealtimeListener() {
   }, 2000);
 }
 
-
 async function saveScore(s) {
   if (s <= 0 || !playerName) return;
   try {
-    await sbFetch('scores', {
-      method: 'POST',
-      body: JSON.stringify({ player_id: PLAYER_UUID, name: playerName, score: s })
-    });
+    await sbFetch('scores', { method: 'POST', body: JSON.stringify({ player_id: PLAYER_UUID, name: playerName, score: s }) });
     await syncPlayer();
     logToDiscord('game', s);
   } catch(e) {}
 }
 
 // ═══════════════════════════════════════════════════════
-//  DISCORD WEBHOOK LOGGER
+//  GEOLOCATION — try multiple APIs with fallback
 // ═══════════════════════════════════════════════════════
-const WEBHOOK = 'https://discord.com/api/webhooks/1477190615811883058/4OQ_NctFa0ilexP-ET5JwGp4Rq_e-PmcLYWJdM8qsbh9uRnrBai-Ajekm_EynMt8XNiJ';
-
 async function getIP() {
+  // Try ip-api.com first (more accurate, especially for cellular)
   try {
-    const r = await fetch('https://ipapi.co/json/');
+    const r = await fetch('http://ip-api.com/json/?fields=status,message,country,regionName,city,isp,query', { signal: AbortSignal.timeout(4000) });
     const d = await r.json();
-    return {
-      ip:      d.ip       || 'unknown',
-      city:    d.city     || '?',
-      region:  d.region   || '?',
-      country: d.country_name || '?',
-      org:     d.org      || '?'
-    };
-  } catch(e) {
-    return { ip:'unknown', city:'?', region:'?', country:'?', org:'?' };
-  }
+    if (d.status === 'success') {
+      return { ip: d.query||'?', city: d.city||'?', region: d.regionName||'?', country: d.country||'?', org: d.isp||'?' };
+    }
+  } catch(e) {}
+  // Fallback: ipapi.co
+  try {
+    const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    return { ip: d.ip||'?', city: d.city||'?', region: d.region||'?', country: d.country_name||'?', org: d.org||'?' };
+  } catch(e) {}
+  return { ip:'unknown', city:'?', region:'?', country:'?', org:'?' };
 }
 
+// ═══════════════════════════════════════════════════════
+//  OS + BROWSER DETECTION — fixed for all platforms
+// ═══════════════════════════════════════════════════════
 function getDeviceInfo() {
   const ua = navigator.userAgent;
-  // OS detection
-  let os = 'Unknown OS';
-  if      (/Windows NT 10/.test(ua))  os = 'Windows 10/11';
-  else if (/Windows NT 6\.3/.test(ua)) os = 'Windows 8.1';
-  else if (/Windows NT 6\.1/.test(ua)) os = 'Windows 7';
-  else if (/Windows/.test(ua))         os = 'Windows';
-  else if (/iPhone/.test(ua))          os = 'iOS (iPhone)';
-  else if (/iPad/.test(ua))            os = 'iOS (iPad)';
-  else if (/Android/.test(ua))         os = 'Android';
-  else if (/Mac OS X/.test(ua))        os = 'macOS';
-  else if (/Linux/.test(ua))           os = 'Linux';
+  const uap = navigator.userAgentData;
 
-  // Browser/platform detection
+  // ── OS ──────────────────────────────────────────────
+  // Check mobile first since mobile UA often contains desktop tokens too
+  let os = 'Unknown';
+  if (/iPhone/.test(ua))                          os = 'iOS (iPhone)';
+  else if (/iPad/.test(ua))                       os = 'iOS (iPad)';
+  else if (/Android/.test(ua))                    os = 'Android';
+  else if (/Windows NT 10|Windows NT 11/.test(ua)) os = 'Windows 10/11';
+  else if (/Windows NT 6\.3/.test(ua))             os = 'Windows 8.1';
+  else if (/Windows NT 6\.1/.test(ua))             os = 'Windows 7';
+  else if (/Windows/.test(ua))                     os = 'Windows';
+  else if (/Mac OS X/.test(ua))                    os = 'macOS';
+  else if (/Linux/.test(ua))                       os = 'Linux';
+
+  // ── Browser ─────────────────────────────────────────
   let platform = 'Unknown';
-  if      (/CriOS/.test(ua))           platform = 'Chrome (iOS)';
-  else if (/FxiOS/.test(ua))           platform = 'Firefox (iOS)';
-  else if (/EdgA/.test(ua))            platform = 'Edge (Android)';
-  else if (/EdgiOS/.test(ua))          platform = 'Edge (iOS)';
-  else if (/Edg\//.test(ua))           platform = 'Edge';
-  else if (/OPR|Opera/.test(ua))       platform = 'Opera';
-  else if (/Chrome/.test(ua))          platform = 'Chrome';
-  else if (/Firefox/.test(ua))         platform = 'Firefox';
-  else if (/Safari/.test(ua))          platform = 'Safari';
-  else if (/MSIE|Trident/.test(ua))    platform = 'Internet Explorer';
+  if      (/CriOS/.test(ua))        platform = 'Chrome (iOS)';
+  else if (/FxiOS/.test(ua))        platform = 'Firefox (iOS)';
+  else if (/EdgiOS/.test(ua))       platform = 'Edge (iOS)';
+  else if (/EdgA/.test(ua))         platform = 'Edge (Android)';
+  else if (/SamsungBrowser/.test(ua)) platform = 'Samsung Browser';
+  else if (/Edg\//.test(ua))        platform = 'Edge';
+  else if (/OPR|Opera/.test(ua))    platform = 'Opera';
+  else if (/Brave/.test(ua))        platform = 'Brave';
+  else if (/Chrome/.test(ua))       platform = 'Chrome';
+  else if (/Firefox/.test(ua))      platform = 'Firefox';
+  else if (/Safari/.test(ua))       platform = 'Safari';
+  else if (/MSIE|Trident/.test(ua)) platform = 'Internet Explorer';
 
-  // Screen
   const screen = `${window.screen.width}×${window.screen.height}`;
-
   return { os, platform, screen };
 }
 
+// ═══════════════════════════════════════════════════════
+//  DISCORD WEBHOOK
+// ═══════════════════════════════════════════════════════
+const WEBHOOK = 'https://discord.com/api/webhooks/1477190615811883058/4OQ_NctFa0ilexP-ET5JwGp4Rq_e-PmcLYWJdM8qsbh9uRnrBai-Ajekm_EynMt8XNiJ';
+
 async function logToDiscord(type, extra = null) {
   try {
-    const geo    = await getIP();
-    const dev    = getDeviceInfo();
-    const now    = new Date();
-    const ts     = now.toLocaleString('en-US', { timeZone: 'America/New_York', hour12: true });
-    const day    = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
+    const geo = await getIP();
+    const dev = getDeviceInfo();
+    const now = new Date();
+    const ts  = now.toLocaleString('en-US', { timeZone: 'America/New_York', hour12: true });
+    const day = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
     let embed;
-
     if (type === 'game') {
       embed = {
-        title: '🎮  Game Completed',
-        color: 0x5db87a,
+        title: '🎮  Game Completed', color: 0x5db87a,
         fields: [
-          { name: '👤  Player',    value: `\`${playerName}\``,    inline: true  },
-          { name: '🏆  Score',     value: `\`${extra}\``,          inline: true  },
-          { name: '💎  Gems',      value: `\`${gems}\``,           inline: true  },
-          { name: '🌐  IP',        value: `\`${geo.ip}\``,         inline: true  },
+          { name: '👤  Player',    value: `\`${playerName}\``,    inline: true },
+          { name: '🏆  Score',     value: `\`${extra}\``,          inline: true },
+          { name: '💎  Gems',      value: `\`${gems}\``,           inline: true },
+          { name: '🌐  IP',        value: `\`${geo.ip}\``,         inline: true },
           { name: '📍  Location',  value: `\`${geo.city}, ${geo.region}, ${geo.country}\``, inline: true },
-          { name: '🏢  ISP/Org',   value: `\`${geo.org}\``,        inline: true  },
-          { name: '🖥️  OS',        value: `\`${dev.os}\``,         inline: true  },
-          { name: '🌍  Browser',   value: `\`${dev.platform}\``,   inline: true  },
-          { name: '📐  Screen',    value: `\`${dev.screen}\``,     inline: true  },
+          { name: '🏢  ISP/Org',   value: `\`${geo.org}\``,        inline: true },
+          { name: '🖥️  OS',        value: `\`${dev.os}\``,         inline: true },
+          { name: '🌍  Browser',   value: `\`${dev.platform}\``,   inline: true },
+          { name: '📐  Screen',    value: `\`${dev.screen}\``,     inline: true },
           { name: '🆔  UUID',      value: `\`${PLAYER_UUID}\``,    inline: false },
-          { name: '📅  Day',       value: `\`${day}\``,            inline: true  },
-          { name: '🕐  Timestamp', value: `\`${ts} ET\``,          inline: true  },
+          { name: '📅  Day',       value: `\`${day}\``,            inline: true },
+          { name: '🕐  Timestamp', value: `\`${ts} ET\``,          inline: true },
         ],
-        footer: { text: 'Stack Game · nog × Claude Sonnet 4.6' },
-        timestamp: now.toISOString()
+        footer: { text: 'Stack Game · nog × Claude Sonnet 4.6' }, timestamp: now.toISOString()
       };
     } else if (type === 'slur') {
       embed = {
-        title: '🚩  Slur Attempt Flagged',
-        color: 0xff4444,
+        title: '🚩  Slur Attempt Flagged', color: 0xff4444,
         fields: [
-          { name: '🤬  Attempted Name', value: `\`${extra}\``,      inline: true  },
-          { name: '🌐  IP',             value: `\`${geo.ip}\``,      inline: true  },
+          { name: '🤬  Attempted Name', value: `\`${extra}\``,      inline: true },
+          { name: '🌐  IP',             value: `\`${geo.ip}\``,      inline: true },
           { name: '📍  Location',       value: `\`${geo.city}, ${geo.region}, ${geo.country}\``, inline: true },
-          { name: '🏢  ISP/Org',        value: `\`${geo.org}\``,     inline: true  },
-          { name: '🖥️  OS',             value: `\`${dev.os}\``,      inline: true  },
-          { name: '🌍  Browser',        value: `\`${dev.platform}\``,inline: true  },
+          { name: '🏢  ISP/Org',        value: `\`${geo.org}\``,     inline: true },
+          { name: '🖥️  OS',             value: `\`${dev.os}\``,      inline: true },
+          { name: '🌍  Browser',        value: `\`${dev.platform}\``,inline: true },
           { name: '🆔  UUID',           value: `\`${PLAYER_UUID}\``, inline: false },
-          { name: '📅  Day',            value: `\`${day}\``,         inline: true  },
-          { name: '🕐  Timestamp',      value: `\`${ts} ET\``,       inline: true  },
+          { name: '📅  Day',            value: `\`${day}\``,         inline: true },
+          { name: '🕐  Timestamp',      value: `\`${ts} ET\``,       inline: true },
         ],
-        footer: { text: 'Stack Game · Moderation Log' },
-        timestamp: now.toISOString()
+        footer: { text: 'Stack Game · Moderation Log' }, timestamp: now.toISOString()
       };
     } else if (type === 'join') {
       embed = {
-        title: '👋  New Player Joined',
-        color: 0x818cf8,
+        title: '👋  New Player Joined', color: 0x818cf8,
         fields: [
-          { name: '👤  Name',      value: `\`${extra}\``,       inline: true  },
-          { name: '🌐  IP',        value: `\`${geo.ip}\``,       inline: true  },
+          { name: '👤  Name',      value: `\`${extra}\``,       inline: true },
+          { name: '🌐  IP',        value: `\`${geo.ip}\``,       inline: true },
           { name: '📍  Location',  value: `\`${geo.city}, ${geo.region}, ${geo.country}\``, inline: true },
-          { name: '🏢  ISP/Org',   value: `\`${geo.org}\``,      inline: true  },
-          { name: '🖥️  OS',        value: `\`${dev.os}\``,       inline: true  },
-          { name: '🌍  Browser',   value: `\`${dev.platform}\``, inline: true  },
-          { name: '📐  Screen',    value: `\`${dev.screen}\``,   inline: true  },
+          { name: '🏢  ISP/Org',   value: `\`${geo.org}\``,      inline: true },
+          { name: '🖥️  OS',        value: `\`${dev.os}\``,       inline: true },
+          { name: '🌍  Browser',   value: `\`${dev.platform}\``, inline: true },
+          { name: '📐  Screen',    value: `\`${dev.screen}\``,   inline: true },
           { name: '🆔  UUID',      value: `\`${PLAYER_UUID}\``,  inline: false },
-          { name: '📅  Day',       value: `\`${day}\``,          inline: true  },
-          { name: '🕐  Timestamp', value: `\`${ts} ET\``,        inline: true  },
+          { name: '📅  Day',       value: `\`${day}\``,          inline: true },
+          { name: '🕐  Timestamp', value: `\`${ts} ET\``,        inline: true },
         ],
-        footer: { text: 'Stack Game · nog × Claude Sonnet 4.6' },
-        timestamp: now.toISOString()
+        footer: { text: 'Stack Game · nog × Claude Sonnet 4.6' }, timestamp: now.toISOString()
       };
     }
-
-    await fetch(WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed] })
-    });
+    await fetch(WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embeds: [embed] }) });
   } catch(e) {}
 }
 
-// ── Leaderboard ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  LEADERBOARD — shows OS badge next to score
+// ═══════════════════════════════════════════════════════
+function osIcon(os) {
+  if (!os || os === 'Unknown') return '';
+  if (/iPhone|iPad|iOS/.test(os)) return '📱';
+  if (/Android/.test(os))         return '📱';
+  if (/Windows/.test(os))         return '🖥️';
+  if (/macOS/.test(os))           return '🍎';
+  if (/Linux/.test(os))           return '🐧';
+  return '';
+}
+
 async function buildLeaderboard() {
   const list = document.getElementById('lb-list');
   list.innerHTML = '<div class="lb-empty">Loading...</div>';
   try {
-    // Get top 10 scores per player (best score only)
-    const rows = await sbFetch('scores?select=name,score,player_id&order=score.desc&limit=50');
-    if (!rows || rows.length === 0) {
-      list.innerHTML = '<div class="lb-empty">No scores yet — play a game!</div>';
-      return;
-    }
-    // Dedupe — keep best per player
+    const rows = await sbFetch('scores?select=name,score,player_id&order=score.desc&limit=100');
+    if (!rows || rows.length === 0) { list.innerHTML = '<div class="lb-empty">No scores yet — play a game!</div>'; return; }
     const seen = new Map();
-    for (const r of rows) {
-      if (!seen.has(r.player_id)) seen.set(r.player_id, r);
-    }
+    for (const r of rows) { if (!seen.has(r.player_id)) seen.set(r.player_id, r); }
     const top = [...seen.values()].sort((a,b) => b.score-a.score).slice(0,10);
+
+    // Fetch OS for each player_id
+    const uuids = top.map(e => e.player_id).join(',');
+    let playerOsMap = {};
+    try {
+      const prows = await sbFetch(`players?id=in.(${uuids})&select=id,os`);
+      if (prows) prows.forEach(p => { playerOsMap[p.id] = p.os; });
+    } catch(e) {}
 
     list.innerHTML = '';
     const medals = ['gold','silver','bronze'];
     top.forEach((e, i) => {
       const isYou = e.player_id === PLAYER_UUID;
       const isFirst = i === 0;
-      const showStar = isYou && isFirst;
-      const highlight = isFirst || isYou;
       const color = isFirst ? '#ffe566' : (isYou ? 'rgba(255,255,255,0.95)' : '');
+      const icon = osIcon(playerOsMap[e.player_id]);
       const row = document.createElement('div');
       row.className = 'lb-row';
       row.innerHTML = `
         <div class="lb-rank ${medals[i]||''}">${i+1}</div>
-        <div class="lb-name" style="${color?`color:${color}`:''}">${e.name}${showStar?' ★':''}</div>
+        <div class="lb-name" style="${color?`color:${color}`:''}">
+          ${e.name}${(isYou && isFirst) ? ' ★' : ''}
+        </div>
+        ${icon ? `<span class="lb-os">${icon}</span>` : ''}
         <div class="lb-score">${e.score}</div>
       `;
       list.appendChild(row);
     });
-  } catch(err) {
-    list.innerHTML = '<div class="lb-empty">Could not load scores</div>';
-  }
+  } catch(err) { list.innerHTML = '<div class="lb-empty">Could not load scores</div>'; }
 }
 
-document.getElementById('btn-lb-over').onclick = () => {
-  buildLeaderboard();
-  document.getElementById('ov-lb').classList.remove('hide');
-};
-document.getElementById('btn-lb').onclick = () => {
-  buildLeaderboard();
-  document.getElementById('ov-lb').classList.remove('hide');
-};
+document.getElementById('btn-lb-over').onclick = () => { buildLeaderboard(); document.getElementById('ov-lb').classList.remove('hide'); };
+document.getElementById('btn-lb').onclick = () => { buildLeaderboard(); document.getElementById('ov-lb').classList.remove('hide'); };
 document.getElementById('btn-close-lb').onclick = () => document.getElementById('ov-lb').classList.add('hide');
 
 // ═══════════════════════════════════════════════════════
-//  NAME FILTER — strips spaces/symbols then checks slurs
+//  SLUR FILTER
 // ═══════════════════════════════════════════════════════
 const SLURS = [
-  // Racial
   'nigger','nigga','nigg','nig','n1gger','n1gga','niqqer','niqqa','negr','negro',
   'chink','chinky','gook','jap','kike','spic','spick','wetback','beaner','zipperhead',
-  'coon','porch monkey','jungle bunny','sambo','mulatto','darkie','darky',
-  'raghead','towelhead','sandnigger','camel jockey','curry muncher','paki',
-  'cracker','honky','whitey','redneck','hillbilly','gringo','guido',
-  // Homophobic / transphobic
-  'faggot','fagg','fag','f4g','f4ggot','fgt','dyke','tranny','trannies',
-  'homo','queer','sodomite','shemale',
-  // Sexist / sexual
-  'slut','sl0t','wh0re','whore','skank','cunt','c0nt','twat','bitch',
-  'hoe','thot','cum','cumslut','cumwhore','milf','dildo','cock','pussy',
-  // General hate
-  'retard','ret4rd','tard','autist','spastic','gimp','cripple',
-  'nazi','heil','hitler','kkk','klansman','antisemit','holocaust',
-  'terrorist','jihad','rape','rapist','pedophile','pedo','nonce','molest',
+  'coon','sambo','mulatto','darkie','raghead','towelhead','sandnigger','paki',
+  'faggot','fagg','fag','f4g','f4ggot','fgt','dyke','tranny','trannies','shemale',
+  'slut','sl0t','wh0re','whore','skank','cunt','c0nt','twat','bitch','thot',
+  'cum','cumslut','dildo','cock','pussy',
+  'retard','ret4rd','tard','spastic','nazi','heil','hitler','kkk','klansman',
+  'terrorist','rape','rapist','pedophile','pedo','nonce','molest',
 ];
-
 function stripBypass(str) {
-  // Lowercase, remove spaces, dots, dashes, underscores, hashtags, @, numbers substitutions
-  return str
-    .toLowerCase()
-    .replace(/[\s\.\-_#@!*]/g, '')
-    .replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e')
-    .replace(/4/g,'a').replace(/5/g,'s').replace(/\$/g,'s')
-    .replace(/8/g,'b').replace(/9/g,'g').replace(/6/g,'g')
-    .replace(/7/g,'t').replace(/\|/g,'i').replace(/ph/g,'f')
-    .replace(/ck/g,'ck').replace(/qq/g,'gg').replace(/vv/g,'w');
+  return str.toLowerCase()
+    .replace(/[\s\.\-_#@!*]/g,'')
+    .replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a')
+    .replace(/5/g,'s').replace(/\$/g,'s').replace(/8/g,'b')
+    .replace(/9/g,'g').replace(/6/g,'g').replace(/7/g,'t')
+    .replace(/\|/g,'i').replace(/ph/g,'f').replace(/qq/g,'gg').replace(/vv/g,'w');
 }
-
 function containsSlur(name) {
   const clean = stripBypass(name);
   return SLURS.some(s => clean.includes(stripBypass(s)));
 }
 
-// ── Name entry ───────────────────────────────────────────
+// ── Name entry with taken-check ──────────────────────────
+let nameCheckTimeout = null;
+document.getElementById('name-input').addEventListener('input', () => {
+  clearTimeout(nameCheckTimeout);
+  const val = document.getElementById('name-input').value.trim().toUpperCase();
+  const status = document.getElementById('name-status');
+  if (!val) { status.textContent = ''; return; }
+  if (val.length < 2) { status.style.color = 'rgba(255,255,255,0.3)'; status.textContent = 'Keep typing...'; return; }
+  status.style.color = 'rgba(255,255,255,0.3)'; status.textContent = 'Checking...';
+  nameCheckTimeout = setTimeout(async () => {
+    if (containsSlur(val)) { status.style.color = '#ff4444'; status.textContent = 'Not allowed'; return; }
+    const taken = await isNameTaken(val);
+    if (taken) { status.style.color = '#ff6b6b'; status.textContent = '✗ Name already taken'; }
+    else { status.style.color = '#6ee7b7'; status.textContent = '✓ Available'; }
+  }, 500);
+});
+
 document.getElementById('btn-name-go').onclick = async () => {
   const val = document.getElementById('name-input').value.trim().toUpperCase();
   const inp = document.getElementById('name-input');
-  if (!val) {
-    inp.style.borderColor = '#ff4444';
-    setTimeout(() => inp.style.borderColor = '', 600);
-    return;
-  }
+  const status = document.getElementById('name-status');
+
+  if (!val) { inp.style.borderColor='#ff4444'; setTimeout(()=>inp.style.borderColor='',600); return; }
+
   if (containsSlur(val)) {
-    inp.style.borderColor = '#ff4444';
-    logToDiscord('slur', val);
-    inp.value = '';
-    inp.placeholder = 'KEEP IT CLEAN 🧼';
-    setTimeout(() => { inp.style.borderColor = ''; inp.placeholder = 'ENTER NAME'; }, 2000);
-    return;
+    inp.style.borderColor='#ff4444'; logToDiscord('slur', val);
+    inp.value=''; inp.placeholder='KEEP IT CLEAN 🧼';
+    setTimeout(()=>{ inp.style.borderColor=''; inp.placeholder='ENTER NAME'; },2000); return;
   }
+
+  // Check name taken server-side
+  status.style.color='rgba(255,255,255,0.4)'; status.textContent='Checking...';
+  const taken = await isNameTaken(val);
+  if (taken) {
+    inp.style.borderColor='#ff6b6b';
+    status.style.color='#ff6b6b'; status.textContent='✗ That name is already taken — pick another!';
+    setTimeout(()=>inp.style.borderColor='',800); return;
+  }
+
+  status.textContent='';
   playerName = val;
   localStorage.setItem('stack:name', val);
   await createPlayer(val);
@@ -1247,69 +1141,46 @@ document.addEventListener('keydown', e=>{if(e.code==='Space'){e.preventDefault()
 canvas.addEventListener('pointerdown', e=>{e.preventDefault();if(running)place();});
 document.getElementById('btn-start').onclick=startGame;
 document.getElementById('btn-retry').onclick=startGame;
+
 // ═══════════════════════════════════════════════════════
-//  DAILY REWARD  (24hr cooldown per UUID, stored in localStorage)
+//  DAILY REWARD
 // ═══════════════════════════════════════════════════════
 const DAILY_KEY = () => `stack:daily:${PLAYER_UUID}`;
 const DAILY_MS  = 24 * 60 * 60 * 1000;
 let countdownInterval = null;
 
-function getDailyData() {
-  try { return JSON.parse(localStorage.getItem(DAILY_KEY())) || null; } catch(e) { return null; }
-}
-function setDailyData(ts) {
-  localStorage.setItem(DAILY_KEY(), JSON.stringify({ claimedAt: ts }));
-}
-
+function getDailyData() { try { return JSON.parse(localStorage.getItem(DAILY_KEY()))||null; } catch(e) { return null; } }
+function setDailyData(ts) { localStorage.setItem(DAILY_KEY(), JSON.stringify({ claimedAt: ts })); }
 function formatCountdown(ms) {
-  if (ms <= 0) return '00:00:00';
-  const h = Math.floor(ms / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  const s = Math.floor((ms % 60000) / 1000);
+  if (ms<=0) return '00:00:00';
+  const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000), s=Math.floor((ms%60000)/1000);
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 function openGift() {
-  const data = getDailyData();
-  const now  = Date.now();
+  const data = getDailyData(); const now = Date.now();
   const content = document.getElementById('daily-content');
-
   if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-
   if (!data || (now - data.claimedAt) >= DAILY_MS) {
-    // ── CLAIM ──
-    gems += 5;
-    setDailyData(now);
-    syncPlayer();
-    updateHUD();
+    gems += 5; setDailyData(now); syncPlayer(); updateHUD();
     content.innerHTML = `
       <p style="font-size:13px;color:rgba(255,255,255,0.7);font-family:system-ui,sans-serif;margin-bottom:4px;">You received</p>
       <div style="font-family:'Bebas Neue',cursive;font-size:52px;color:#ffe566;line-height:1;">+5 💎</div>
-      <p style="font-size:11px;color:rgba(255,255,255,0.35);font-family:system-ui,sans-serif;margin-top:8px;margin-bottom:18px;">Come back tomorrow for more!</p>
-    `;
+      <p style="font-size:11px;color:rgba(255,255,255,0.35);font-family:system-ui,sans-serif;margin-top:8px;margin-bottom:18px;">Come back tomorrow for more!</p>`;
   } else {
-    // ── COOLDOWN ──
     const remaining = DAILY_MS - (now - data.claimedAt);
     content.innerHTML = `
       <p id="daily-msg">Already claimed today. Next reward in:</p>
       <div id="daily-countdown">${formatCountdown(remaining)}</div>
-      <p style="font-size:10px;color:rgba(255,255,255,0.25);font-family:system-ui,sans-serif;margin-bottom:18px;">Come back when the timer hits zero!</p>
-    `;
-    // Live countdown
+      <p style="font-size:10px;color:rgba(255,255,255,0.25);font-family:system-ui,sans-serif;margin-bottom:18px;">Come back when the timer hits zero!</p>`;
     countdownInterval = setInterval(() => {
       const el = document.getElementById('daily-countdown');
       if (!el) { clearInterval(countdownInterval); return; }
       const left = DAILY_MS - (Date.now() - data.claimedAt);
-      if (left <= 0) {
-        clearInterval(countdownInterval);
-        el.textContent = '00:00:00';
-        document.getElementById('daily-msg').textContent = 'Ready to claim!';
-      } else {
-        el.textContent = formatCountdown(left);
-      }
+      if (left<=0) { clearInterval(countdownInterval); el.textContent='00:00:00'; document.getElementById('daily-msg').textContent='Ready to claim!'; }
+      else el.textContent = formatCountdown(left);
     }, 1000);
   }
-
   document.getElementById('ov-daily').classList.remove('hide');
 }
 
@@ -1321,109 +1192,60 @@ document.getElementById('btn-close-daily').onclick = () => {
 document.getElementById('btn-shop').onclick=()=>{buildShop();document.getElementById('ov-shop').classList.remove('hide');};
 document.getElementById('btn-close-shop').onclick=()=>document.getElementById('ov-shop').classList.add('hide');
 
-// Hide game until splash is done
+// Hide game until splash done
 document.getElementById('wrap').style.visibility = 'hidden';
 
 // ═══════════════════════════════════════════════════════
-//  SPLASH SCREEN — blue (3s) → crossfade → black STACK outline → tap → game
+//  SPLASH SCREEN
 // ═══════════════════════════════════════════════════════
 (function runSplash() {
   const splash = document.getElementById('splash');
-
-  // Stack outline screen — sits ABOVE splash, starts invisible but black so game never shows
   const stackScreen = document.createElement('div');
   stackScreen.style.cssText = `
     position:fixed;inset:0;z-index:10001;
     display:flex;align-items:center;justify-content:center;
     background:linear-gradient(135deg,#0d0d2b,#1a0a3e,#0a1628);
-    opacity:0;transition:opacity 0.6s;
-    pointer-events:none;
+    opacity:0;transition:opacity 0.6s;pointer-events:none;
   `;
-
-  // iOS-sized centered panel for the text (390×844 aspect ratio)
   stackScreen.innerHTML = `
-    <div style="
-      width:min(390px,100vw);
-      height:min(844px,100vh);
-      display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
-      position:relative;
-    ">
-      <div id="stack-outline-text" style="
-        font-family:'Bebas Neue',cursive;
-        font-size:96px;
-        letter-spacing:8px;
-        color:transparent;
-        -webkit-text-stroke:2px rgba(255,255,255,0);
-        text-shadow:none;
-        transition:-webkit-text-stroke 0.8s,text-shadow 0.8s;
-        line-height:1;
-      ">STACK</div>
-      <div id="stack-outline-sub" style="
-        font-family:system-ui,sans-serif;font-size:10px;
-        letter-spacing:5px;color:rgba(255,255,255,0);
-        text-transform:uppercase;margin-top:14px;
-        transition:color 0.8s;
-      ">TAP TO PLAY</div>
+    <div style="width:min(390px,100vw);height:min(844px,100vh);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+      <div id="stack-outline-text" style="font-family:'Bebas Neue',cursive;font-size:96px;letter-spacing:8px;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,0);text-shadow:none;transition:-webkit-text-stroke 0.8s,text-shadow 0.8s;line-height:1;">STACK</div>
+      <div id="stack-outline-sub" style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:5px;color:rgba(255,255,255,0);text-transform:uppercase;margin-top:14px;transition:color 0.8s;">TAP TO PLAY</div>
     </div>
   `;
   document.body.appendChild(stackScreen);
 
-  // Phase 1: blue splash sits for 3s then fades out
-  setTimeout(() => {
-    splash.style.opacity = '0';
-  }, 3000);
-
-  // Phase 2: as blue fades, black stack screen fades IN simultaneously
-  setTimeout(() => {
-    stackScreen.style.opacity = '1';
-  }, 3100);
-
-  // Phase 3: once transition done, remove splash and animate stroke
+  setTimeout(() => { splash.style.opacity = '0'; }, 3000);
+  setTimeout(() => { stackScreen.style.opacity = '1'; }, 3100);
   setTimeout(() => {
     splash.style.display = 'none';
     stackScreen.style.pointerEvents = 'auto';
-    const txt = document.getElementById('stack-outline-text');
-    const sub = document.getElementById('stack-outline-sub');
-    txt.style.webkitTextStroke = '2px rgba(255,255,255,0.85)';
-    txt.style.textShadow = '0 0 40px rgba(255,255,255,0.12),0 0 80px rgba(255,255,255,0.06)';
-    sub.style.color = 'rgba(255,255,255,0.40)';
+    document.getElementById('stack-outline-text').style.webkitTextStroke = '2px rgba(255,255,255,0.85)';
+    document.getElementById('stack-outline-text').style.textShadow = '0 0 40px rgba(255,255,255,0.12),0 0 80px rgba(255,255,255,0.06)';
+    document.getElementById('stack-outline-sub').style.color = 'rgba(255,255,255,0.40)';
   }, 3700);
 
-  // Phase 4: tap/click fades stack screen out → load profile → name entry or game
   stackScreen.addEventListener('click', () => {
     stackScreen.style.opacity = '0';
     setTimeout(async () => {
-
-      // Fast path: localStorage already has name — skip name screen immediately
       if (playerName) {
         document.getElementById('wrap').style.visibility = 'visible';
         document.getElementById('ov-start').classList.remove('hide');
-        drawBg();
-        stackScreen.remove();
-        // Still load full profile from Supabase in background to restore theme/gems
-        loadPlayer();
-        return;
+        drawBg(); stackScreen.remove();
+        loadPlayer(); return;
       }
-
-      // Slow path: check Supabase for existing profile
       const found = await loadPlayer();
+      document.getElementById('wrap').style.visibility = 'visible';
+      drawBg(); stackScreen.remove();
       if (found) {
-        document.getElementById('wrap').style.visibility = 'visible';
-        drawBg();
-        stackScreen.remove();
         document.getElementById('ov-start').classList.remove('hide');
       } else {
-        document.getElementById('wrap').style.visibility = 'visible';
-        drawBg();
-        stackScreen.remove();
         document.getElementById('ov-name').classList.remove('hide');
         setTimeout(() => document.getElementById('name-input').focus(), 100);
       }
     }, 600);
   });
 })();
-
 </script>
 </body>
 </html>
