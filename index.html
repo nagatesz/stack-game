@@ -838,17 +838,86 @@ function showGemAward(amount) {
 
 // ── Polling gem listener ─────────────────────────────────
 let realtimeStarted = false;
+let isBanned = false;
+
+// ── Ban check on startup ─────────────────────────────────
+async function checkBanned() {
+  try {
+    const rows = await sbFetch(`banned?player_id=eq.${PLAYER_UUID}&select=reason`);
+    if (rows && rows.length > 0) {
+      isBanned = true;
+      showAdminNotice('🔨 YOU HAVE BEEN BANNED', rows[0].reason || 'Contact admin', '#ff4444');
+    }
+  } catch(e) {}
+}
+
+// ── Show a dismissable admin notice overlay ──────────────
+function showAdminNotice(title, msg, color = '#ffe566') {
+  // Remove existing
+  const old = document.getElementById('admin-notice');
+  if (old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'admin-notice';
+  el.style.cssText = `
+    position:fixed;top:0;left:0;right:0;z-index:9999;
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);
+    border-bottom:2px solid ${color};
+    font-family:'Bebas Neue',cursive;
+    animation:slideDown 0.4s ease-out;
+  `;
+  el.innerHTML = `
+    <div>
+      <div style="font-size:18px;letter-spacing:3px;color:${color};">${title}</div>
+      <div style="font-size:12px;letter-spacing:2px;color:rgba(255,255,255,0.65);margin-top:2px;">${msg}</div>
+    </div>
+    <div onclick="this.parentElement.remove()" style="cursor:pointer;font-size:22px;color:rgba(255,255,255,0.5);padding:0 8px;">✕</div>
+  `;
+  // Add slide animation
+  const style = document.createElement('style');
+  style.textContent = '@keyframes slideDown{from{transform:translateY(-100%);opacity:0;}to{transform:translateY(0);opacity:1;}}';
+  document.head.appendChild(style);
+  document.body.appendChild(el);
+  // Auto-dismiss after 8s unless it's a ban
+  if (color !== '#ff4444') setTimeout(() => el.remove(), 8000);
+}
+
+// ── Show takegems animation (reverse of gem rain) ────────
+function showGemTake(amount) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:9000;pointer-events:none;text-align:center;
+    font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;
+    color:#ff6b6b;text-shadow:0 0 30px #ff0000;
+    animation:gemPulse 0.4s ease-in-out 2;
+  `;
+  el.textContent = `-${amount} 💎`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+}
+
 function startRealtimeListener() {
   if (!PLAYER_UUID || realtimeStarted) return;
   realtimeStarted = true;
+
+  // Check ban on startup
+  checkBanned();
+
   setTimeout(async () => {
+    // Hard sync baseline
     try {
       const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
       if (rows && rows.length > 0) { gems = parseInt(rows[0].gems) || 0; updateHUD(); }
     } catch(e) {}
+
     let serverBaseline = gems;
+    let lastActionId = 0;
+
+    // Single interval handles both gem polling AND admin actions
     setInterval(async () => {
       try {
+        // ── Gem polling ──────────────────────────────────
         const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
         if (rows && rows.length > 0) {
           const serverGems = parseInt(rows[0].gems) || 0;
@@ -861,14 +930,77 @@ function startRealtimeListener() {
             if (serverGems !== gems && !syncingToServer) { gems = serverGems; updateHUD(); }
           }
         }
+
+        // ── Admin actions polling ─────────────────────────
+        // Fetch unseen actions for this player OR broadcasts (player_id is null)
+        const actions = await sbFetch(
+          `admin_actions?or=(player_id.eq.${PLAYER_UUID},player_id.is.null)&seen=eq.false&order=id.asc&limit=10`
+        );
+        if (actions && actions.length > 0) {
+          for (const a of actions) {
+            if (a.id <= lastActionId) continue;
+            lastActionId = a.id;
+
+            if (a.action === 'ban') {
+              isBanned = true;
+              showAdminNotice('🔨 YOU HAVE BEEN BANNED', a.payload?.reason || 'Contact admin', '#ff4444');
+            } else if (a.action === 'unban') {
+              isBanned = false;
+              showAdminNotice('✅ YOU HAVE BEEN UNBANNED', 'You can play again!', '#5db87a');
+            } else if (a.action === 'takegems') {
+              const newG = parseInt(a.payload?.newGems) || 0;
+              showGemTake(a.payload?.amount || 0);
+              gems = newG; serverBaseline = newG;
+              updateHUD();
+            } else if (a.action === 'setgems') {
+              const newG = parseInt(a.payload?.amount) || 0;
+              gems = newG; serverBaseline = newG;
+              updateHUD();
+              showAdminNotice('💎 GEMS UPDATED', `Your balance is now ${newG} 💎`, '#ffe566');
+            } else if (a.action === 'addtheme') {
+              // Unlock theme in local state + localStorage
+              const theme = a.payload?.theme;
+              const ownedStr = a.payload?.owned_themes;
+              if (theme && ownedStr) {
+                try {
+                  const owned = ownedStr.split(',');
+                  ownedPals = new Set(owned);
+                  showAdminNotice('🎨 THEME UNLOCKED', `${theme.toUpperCase()} has been added to your collection!`, '#c084fc');
+                }catch(e){}
+              }
+            } else if (a.action === 'announce') {
+              const msg = a.payload?.message || '';
+              const from = a.payload?.from || 'Admin';
+              showAdminNotice(`📢 ${from.toUpperCase()}`, msg, '#00e5ff');
+            }
+
+            // Mark as seen
+            await sbFetch(`admin_actions?id=eq.${a.id}`, {
+              method: 'PATCH',
+              headers: { 'Prefer': 'return=minimal' },
+              body: JSON.stringify({ seen: true })
+            });
+          }
+        }
       } catch(e) {}
     }, 3000);
   }, 2000);
 }
 
+// ── Ban gate on score submit ─────────────────────────────
+async function checkBannedBeforeScore() {
+  try {
+    const rows = await sbFetch(`banned?player_id=eq.${PLAYER_UUID}&select=reason`);
+    return rows && rows.length > 0;
+  } catch(e) { return false; }
+}
+
 async function saveScore(s) {
   if (s <= 0 || !playerName) return;
   try {
+    // Don't submit scores if banned
+    const banned = isBanned || await checkBannedBeforeScore();
+    if (banned) { isBanned = true; return; }
     await sbFetch('scores', { method: 'POST', body: JSON.stringify({ player_id: PLAYER_UUID, name: playerName, score: s }) });
     await syncPlayer();
     logToDiscord('game', s);
