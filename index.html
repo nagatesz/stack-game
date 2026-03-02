@@ -520,13 +520,7 @@ function render() {
   ctx.restore();
 }
 
-let lastFrameTime = 0;
-let deltaTime = 1;
-
-function masterLoop(ts) {
-  if (lastFrameTime) deltaTime = Math.min((ts - lastFrameTime) / 16.667, 3);
-  else deltaTime = 1;
-  lastFrameTime = ts;
+function masterLoop() {
   stepParticles();
   if (running) stepGame();
   render();
@@ -544,11 +538,11 @@ function stepParticles() {
 
 function stepGame() {
   if (mover.axis==='x') {
-    mover.px += mover.spd*mover.dir*deltaTime;
+    mover.px += mover.spd*mover.dir;
     if (mover.px >= mover._max) mover.dir=-1;
     if (mover.px <= mover._min) mover.dir= 1;
   } else {
-    mover.pz += mover.spd*mover.dir*deltaTime;
+    mover.pz += mover.spd*mover.dir;
     if (mover.pz >= mover._max) mover.dir=-1;
     if (mover.pz <= mover._min) mover.dir= 1;
   }
