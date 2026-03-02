@@ -1627,6 +1627,822 @@ document.getElementById('wrap').style.visibility = 'hidden';
     }, 600);
   });
 })();
+
+
+// ═══════════════════════════════════════════════════════
+//  ADMIN PANEL — invisible trigger + password + draggable UI
+// ═══════════════════════════════════════════════════════
+(function() {
+
+  // Password: salted SHA-256. Plaintext never stored anywhere in this file.
+  // Salt: stk_adm_s4lt_7x2  |  Hash of: salt+password+salt
+  const _S = ['s','t','k','_','a','d','m','_','s','4','l','t','_','7','x','2'].join('');
+  const _H = 'b6836130afc8bc2320026ae3f0d9f19e90788115cb5c06d8ac95601185c34401';
+
+  async function _hashInput(input) {
+    const raw = _S + input + _S;
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  // ── Invisible 40×40 trigger zone — top-left, cursor unchanged ────────────
+  const _trap = document.createElement('div');
+  _trap.style.cssText = 'position:fixed;top:0;left:0;width:40px;height:40px;z-index:89999;cursor:default;background:transparent;';
+  document.body.appendChild(_trap);
+
+  let _clicks = [];
+  _trap.addEventListener('click', () => {
+    const now = Date.now();
+    _clicks.push(now);
+    _clicks = _clicks.filter(t => now - t < 3000);
+    if (_clicks.length >= 10) {
+      _clicks = [];
+      _showPassword();
+    }
+  });
+
+  // ── Global styles ─────────────────────────────────────────────────────────
+  const _css = document.createElement('style');
+  _css.textContent = `
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    @keyframes _admIn   { from{opacity:0;transform:translateY(-12px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes _admSlide{ from{opacity:0;transform:scale(0.93)} to{opacity:1;transform:scale(1)} }
+    @keyframes _admPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0.4)} 50%{box-shadow:0 0 0 8px rgba(99,102,241,0)} }
+    @keyframes _spin    { to{transform:rotate(360deg)} }
+    @keyframes _shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    #_adm-wrap * { box-sizing:border-box; font-family:'Inter',system-ui,sans-serif; }
+    #_adm-wrap ::-webkit-scrollbar { width:4px; height:4px; }
+    #_adm-wrap ::-webkit-scrollbar-track { background:transparent; }
+    #_adm-wrap ::-webkit-scrollbar-thumb { background:rgba(99,102,241,0.35); border-radius:4px; }
+    ._adm-btn { padding:8px 14px; border-radius:10px; border:none; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s; letter-spacing:0.04em; font-family:'Inter',system-ui,sans-serif; display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+    ._adm-btn:hover { filter:brightness(1.12); transform:translateY(-1px); }
+    ._adm-btn:active { transform:scale(0.96); }
+    ._adm-btn-pri  { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; box-shadow:0 2px 16px rgba(99,102,241,0.35); }
+    ._adm-btn-grn  { background:linear-gradient(135deg,#059669,#10b981); color:#fff; }
+    ._adm-btn-red  { background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; }
+    ._adm-btn-pur  { background:linear-gradient(135deg,#7c3aed,#a855f7); color:#fff; }
+    ._adm-btn-cyn  { background:linear-gradient(135deg,#0891b2,#06b6d4); color:#fff; }
+    ._adm-btn-ghost{ background:rgba(99,102,241,0.1); color:#818cf8; border:1px solid rgba(99,102,241,0.25); }
+    ._adm-btn-ghost:hover { background:rgba(99,102,241,0.18); }
+    ._adm-input { width:100%; background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.2); border-radius:10px; padding:9px 12px; color:#f1f5f9; font-size:13px; outline:none; transition:border-color 0.2s; font-family:'Inter',system-ui,sans-serif; display:block; }
+    ._adm-input:focus { border-color:rgba(99,102,241,0.55); background:rgba(99,102,241,0.1); }
+    ._adm-input::placeholder { color:rgba(148,163,184,0.4); }
+    ._adm-card { background:rgba(99,102,241,0.05); border:1px solid rgba(99,102,241,0.14); border-radius:14px; padding:16px; }
+    ._adm-card-title { font-size:11px; font-weight:700; color:#818cf8; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:12px; }
+    ._adm-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid rgba(99,102,241,0.07); font-size:12px; }
+    ._adm-row:last-child { border-bottom:none; }
+    ._adm-row-key { color:rgba(148,163,184,0.5); font-size:11px; text-transform:uppercase; letter-spacing:0.07em; flex-shrink:0; }
+    ._adm-row-val { color:#f1f5f9; font-weight:600; text-align:right; word-break:break-all; max-width:65%; }
+    ._adm-pill { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; letter-spacing:0.06em; }
+    ._adm-tab-btn { padding:10px 16px; background:transparent; border:none; border-bottom:2px solid transparent; color:rgba(148,163,184,0.45); font-size:12px; font-weight:700; cursor:pointer; letter-spacing:0.06em; transition:all 0.2s; font-family:'Inter',system-ui,sans-serif; white-space:nowrap; }
+    ._adm-tab-btn:hover { color:rgba(165,180,252,0.75); background:rgba(99,102,241,0.06); }
+    ._adm-tab-btn._active { color:#a5b4fc; border-bottom-color:#818cf8; background:rgba(99,102,241,0.1); }
+    ._prow { background:rgba(99,102,241,0.04); border:1px solid rgba(99,102,241,0.1); border-radius:12px; padding:10px 13px; display:flex; align-items:center; gap:11px; cursor:pointer; transition:all 0.15s; }
+    ._prow:hover { background:rgba(99,102,241,0.11); border-color:rgba(99,102,241,0.28); transform:translateX(2px); }
+    ._stat-card { background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15); border-radius:14px; padding:14px 16px; text-align:center; }
+    ._stat-val { font-size:26px; font-weight:800; color:#a5b4fc; }
+    ._stat-lbl { font-size:10px; color:rgba(148,163,184,0.45); letter-spacing:0.1em; text-transform:uppercase; margin-top:3px; }
+  `;
+  document.head.appendChild(_css);
+
+  // ── Password screen ───────────────────────────────────────────────────────
+  function _showPassword() {
+    if (document.getElementById('_adm-pass')) return;
+    const el = document.createElement('div');
+    el.id = '_adm-pass';
+    el.style.cssText = `
+      position:fixed;inset:0;z-index:90000;display:flex;align-items:center;justify-content:center;
+      background:rgba(7,9,22,0.94);backdrop-filter:blur(24px);
+      animation:_admIn 0.28s ease;font-family:'Inter',system-ui,sans-serif;
+    `;
+    el.innerHTML = `
+      <div style="
+        background:linear-gradient(160deg,rgba(13,17,45,0.99),rgba(10,12,30,0.99));
+        border:1px solid rgba(99,102,241,0.3);border-radius:24px;
+        padding:40px 36px;width:340px;
+        box-shadow:0 0 0 1px rgba(99,102,241,0.08),0 24px 80px rgba(0,0,0,0.85),0 0 60px rgba(99,102,241,0.12);
+        position:relative;
+      ">
+        <button id="_adm-pass-close" style="position:absolute;top:14px;right:16px;background:none;border:none;color:rgba(148,163,184,0.35);font-size:18px;cursor:pointer;line-height:1;padding:4px;">✕</button>
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.15));border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;animation:_admPulse 2s ease-in-out infinite;">🛡️</div>
+          <div style="font-size:20px;font-weight:800;letter-spacing:0.04em;background:linear-gradient(135deg,#818cf8,#a78bfa,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ADMIN ACCESS</div>
+          <div style="color:rgba(148,163,184,0.35);font-size:11px;margin-top:4px;letter-spacing:0.12em;">STACK GAME CONTROL PANEL</div>
+        </div>
+        <div style="position:relative;margin-bottom:8px;">
+          <input id="_adm-pass-inp" type="password" placeholder="Enter password…" style="
+            width:100%;box-sizing:border-box;
+            background:rgba(99,102,241,0.08);
+            border:1px solid rgba(99,102,241,0.25);
+            border-radius:12px;padding:13px 16px;
+            color:#f1f5f9;font-size:14px;font-family:'Inter',system-ui,sans-serif;
+            outline:none;letter-spacing:0.08em;transition:border-color 0.2s;
+          "/>
+        </div>
+        <div id="_adm-pass-err" style="color:#ef4444;font-size:12px;text-align:center;height:18px;margin-bottom:10px;font-weight:600;"></div>
+        <button id="_adm-pass-btn" style="
+          width:100%;padding:13px;border-radius:12px;border:none;
+          background:linear-gradient(135deg,#6366f1,#8b5cf6);
+          color:#fff;font-size:14px;font-weight:700;cursor:pointer;
+          box-shadow:0 0 28px rgba(99,102,241,0.4);font-family:'Inter',system-ui,sans-serif;
+          letter-spacing:0.06em;transition:all 0.2s;
+        ">AUTHENTICATE</button>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    const inp = el.querySelector('#_adm-pass-inp');
+    const err = el.querySelector('#_adm-pass-err');
+    const btn = el.querySelector('#_adm-pass-btn');
+    setTimeout(() => inp.focus(), 60);
+
+    async function _try() {
+      btn.textContent = '…'; btn.style.opacity = '0.7';
+      const h = await _hashInput(inp.value);
+      btn.textContent = 'AUTHENTICATE'; btn.style.opacity = '1';
+      if (h === _H) {
+        el.style.transition = 'opacity 0.35s';
+        el.style.opacity = '0';
+        setTimeout(() => { el.remove(); _showPanel(); }, 350);
+      } else {
+        err.textContent = '❌  Incorrect password';
+        inp.style.borderColor = '#ef4444';
+        inp.value = '';
+        setTimeout(() => { err.textContent = ''; inp.style.borderColor = 'rgba(99,102,241,0.25)'; inp.focus(); }, 2000);
+      }
+    }
+    btn.onclick = _try;
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') _try(); });
+    el.querySelector('#_adm-pass-close').onclick = () => el.remove();
+  }
+
+  // ── OS helper ─────────────────────────────────────────────────────────────
+  function _osEmoji(os) {
+    if (!os) return '❓';
+    if (/iPhone|iPad/.test(os)) return '📱';
+    if (/Android/.test(os)) return '🤖';
+    if (/Windows/.test(os)) return '🖥️';
+    if (/macOS/.test(os)) return '🍎';
+    if (/Linux/.test(os)) return '🐧';
+    return '💻';
+  }
+
+  function _fmtDate(str) {
+    if (!str) return '—';
+    return new Date(str).toLocaleString('en-US', { timeZone:'America/New_York', hour12:true, month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+  }
+
+  function _banPill(isBanned) {
+    return isBanned
+      ? `<span class="_adm-pill" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);">BANNED</span>`
+      : `<span class="_adm-pill" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">ACTIVE</span>`;
+  }
+
+  // ── Main panel ────────────────────────────────────────────────────────────
+  function _showPanel() {
+    if (document.getElementById('_adm-wrap')) return;
+
+    const wrap = document.createElement('div');
+    wrap.id = '_adm-wrap';
+    wrap.style.cssText = `
+      position:fixed;top:50px;left:50px;width:820px;max-height:90vh;
+      z-index:90001;border-radius:22px;overflow:hidden;
+      background:linear-gradient(160deg,rgba(10,13,35,0.99),rgba(7,9,22,0.99));
+      border:1px solid rgba(99,102,241,0.28);
+      box-shadow:0 0 0 1px rgba(99,102,241,0.07),0 32px 100px rgba(0,0,0,0.9),0 0 80px rgba(99,102,241,0.1);
+      display:flex;flex-direction:column;
+      animation:_admSlide 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      font-family:'Inter',system-ui,sans-serif;
+    `;
+
+    wrap.innerHTML = `
+      <!-- TITLE BAR (draggable) -->
+      <div id="_adm-tbar" style="
+        padding:13px 18px;
+        background:linear-gradient(90deg,rgba(13,17,45,0.98),rgba(10,13,35,0.98));
+        border-bottom:1px solid rgba(99,102,241,0.16);
+        display:flex;align-items:center;justify-content:space-between;
+        cursor:grab;user-select:none;flex-shrink:0;
+      ">
+        <div style="display:flex;align-items:center;gap:11px;">
+          <div style="width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,rgba(99,102,241,0.25),rgba(139,92,246,0.15));border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;">🛡️</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;letter-spacing:0.07em;background:linear-gradient(135deg,#818cf8,#a78bfa,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STACK ADMIN</div>
+            <div style="color:rgba(148,163,184,0.35);font-size:10px;letter-spacing:0.13em;margin-top:1px;">CONTROL PANEL</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="_adm-status" style="font-size:11px;color:rgba(99,102,241,0.5);font-weight:600;"></div>
+          <button id="_adm-minimize" style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;">− Min</button>
+          <button id="_adm-close" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;">✕ Close</button>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div id="_adm-tabs" style="display:flex;border-bottom:1px solid rgba(99,102,241,0.12);background:rgba(9,11,28,0.8);flex-shrink:0;overflow-x:auto;">
+        <button class="_adm-tab-btn _active" data-t="0">👥 Players</button>
+        <button class="_adm-tab-btn" data-t="1">💎 Economy</button>
+        <button class="_adm-tab-btn" data-t="2">📊 Stats</button>
+        <button class="_adm-tab-btn" data-t="3">🔨 Moderation</button>
+        <button class="_adm-tab-btn" data-t="4">📢 Broadcast</button>
+        <button class="_adm-tab-btn" data-t="5">🔍 Search</button>
+      </div>
+
+      <!-- CONTENT -->
+      <div id="_adm-body" style="flex:1;overflow-y:auto;overflow-x:hidden;">
+
+        <!-- TAB 0: Players -->
+        <div id="_adm-t0" class="_adm-pane" style="padding:16px;">
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+            <input id="_adm-psearch" class="_adm-input" placeholder="🔍  Search name or UUID…" style="flex:1;min-width:180px;"/>
+            <button id="_adm-pload" class="_adm-btn _adm-btn-pri">🔄 Refresh</button>
+            <select id="_adm-psort" class="_adm-input" style="width:140px;">
+              <option value="updated_at.desc">Last Active</option>
+              <option value="gems.desc">Most Gems</option>
+              <option value="name.asc">Name A–Z</option>
+            </select>
+          </div>
+          <div id="_adm-pcount" style="font-size:11px;color:rgba(148,163,184,0.35);margin-bottom:10px;letter-spacing:0.05em;"></div>
+          <div id="_adm-plist" style="display:flex;flex-direction:column;gap:5px;">
+            <div style="color:rgba(148,163,184,0.25);text-align:center;padding:32px;font-size:13px;">Click Refresh to load players</div>
+          </div>
+        </div>
+
+        <!-- TAB 1: Economy -->
+        <div id="_adm-t1" class="_adm-pane" style="padding:16px;display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div class="_adm-card">
+              <div class="_adm-card-title">💎 Give Gems</div>
+              <input id="_eco-give-t" class="_adm-input" placeholder="Name or UUID" style="margin-bottom:8px;"/>
+              <input id="_eco-give-a" class="_adm-input" type="number" min="1" placeholder="Amount" style="margin-bottom:10px;"/>
+              <button id="_eco-give-btn" class="_adm-btn _adm-btn-grn" style="width:100%;">✅ Give Gems</button>
+            </div>
+            <div class="_adm-card">
+              <div class="_adm-card-title">💸 Take Gems</div>
+              <input id="_eco-take-t" class="_adm-input" placeholder="Name or UUID" style="margin-bottom:8px;"/>
+              <input id="_eco-take-a" class="_adm-input" type="number" min="1" placeholder="Amount" style="margin-bottom:10px;"/>
+              <button id="_eco-take-btn" class="_adm-btn _adm-btn-red" style="width:100%;">❌ Take Gems</button>
+            </div>
+            <div class="_adm-card">
+              <div class="_adm-card-title">⚙️ Set Gems</div>
+              <input id="_eco-set-t" class="_adm-input" placeholder="Name or UUID" style="margin-bottom:8px;"/>
+              <input id="_eco-set-a" class="_adm-input" type="number" min="0" placeholder="Exact amount" style="margin-bottom:10px;"/>
+              <button id="_eco-set-btn" class="_adm-btn _adm-btn-pri" style="width:100%;">💎 Set Gems</button>
+            </div>
+            <div class="_adm-card">
+              <div class="_adm-card-title">🎨 Grant Theme</div>
+              <input id="_eco-thm-t" class="_adm-input" placeholder="Name or UUID" style="margin-bottom:8px;"/>
+              <select id="_eco-thm-s" class="_adm-input" style="margin-bottom:10px;">
+                ${['classic','ocean','sunset','neon','candy','mono','lava','arctic','galaxy','gold','forest','cherry'].map(t=>`<option value="${t}">${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
+              </select>
+              <button id="_eco-thm-btn" class="_adm-btn _adm-btn-pur" style="width:100%;">🎨 Grant Theme</button>
+            </div>
+          </div>
+          <div id="_eco-result" style="min-height:22px;text-align:center;font-size:13px;font-weight:600;padding:4px;border-radius:8px;transition:all 0.2s;"></div>
+        </div>
+
+        <!-- TAB 2: Stats -->
+        <div id="_adm-t2" class="_adm-pane" style="padding:16px;display:none;">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+            <div class="_stat-card"><div class="_stat-val" id="_st-players">—</div><div class="_stat-lbl">Players</div></div>
+            <div class="_stat-card"><div class="_stat-val" id="_st-games">—</div><div class="_stat-lbl">Games Played</div></div>
+            <div class="_stat-card"><div class="_stat-val" id="_st-gems">—</div><div class="_stat-lbl">Total Gems</div></div>
+            <div class="_stat-card"><div class="_stat-val" id="_st-bans">—</div><div class="_stat-lbl">Banned</div></div>
+          </div>
+          <button id="_st-load" class="_adm-btn _adm-btn-pri" style="margin-bottom:14px;">🔄 Load Stats</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="_adm-card">
+              <div class="_adm-card-title">🏆 Leaderboard</div>
+              <div id="_st-lb" style="margin-top:4px;"></div>
+            </div>
+            <div class="_adm-card">
+              <div class="_adm-card-title">💎 Rich List</div>
+              <div id="_st-rich" style="margin-top:4px;"></div>
+            </div>
+          </div>
+          <div class="_adm-card" style="margin-top:12px;">
+            <div class="_adm-card-title">🕐 Recent Games</div>
+            <div id="_st-recent" style="margin-top:4px;"></div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Moderation -->
+        <div id="_adm-t3" class="_adm-pane" style="padding:16px;display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="_adm-card">
+              <div class="_adm-card-title">🔨 Ban Player</div>
+              <input id="_mod-ban-t" class="_adm-input" placeholder="Name or UUID" style="margin-bottom:8px;"/>
+              <input id="_mod-ban-r" class="_adm-input" placeholder="Reason" style="margin-bottom:10px;"/>
+              <button id="_mod-ban-btn" class="_adm-btn _adm-btn-red" style="width:100%;">🔨 Ban + Delete Scores</button>
+            </div>
+            <div class="_adm-card">
+              <div class="_adm-card-title">✅ Unban Player</div>
+              <input id="_mod-unban-t" class="_adm-input" placeholder="Name or UUID" style="margin-bottom:10px;"/>
+              <button id="_mod-unban-btn" class="_adm-btn _adm-btn-grn" style="width:100%;">✅ Unban</button>
+            </div>
+            <div class="_adm-card">
+              <div class="_adm-card-title">✏️ Rename Player</div>
+              <input id="_mod-ren-u" class="_adm-input" placeholder="UUID (required)" style="margin-bottom:8px;"/>
+              <input id="_mod-ren-n" class="_adm-input" placeholder="New name" style="margin-bottom:10px;"/>
+              <button id="_mod-ren-btn" class="_adm-btn _adm-btn-pri" style="width:100%;">✏️ Rename</button>
+            </div>
+            <div class="_adm-card">
+              <div class="_adm-card-title">🗑️ Reset Scores</div>
+              <input id="_mod-rst-t" class="_adm-input" placeholder="Name or UUID" style="margin-bottom:8px;"/>
+              <div style="font-size:11px;color:rgba(239,68,68,0.6);margin-bottom:10px;">Wipes leaderboard scores. Account and gems kept.</div>
+              <button id="_mod-rst-btn" class="_adm-btn _adm-btn-red" style="width:100%;background:linear-gradient(135deg,#7f1d1d,#991b1b);">🗑️ Reset Scores</button>
+            </div>
+          </div>
+          <div id="_mod-result" style="margin-top:12px;min-height:22px;text-align:center;font-size:13px;font-weight:600;padding:4px;border-radius:8px;transition:all 0.2s;"></div>
+          <div class="_adm-card" style="margin-top:12px;">
+            <div class="_adm-card-title">🚫 Banned Players</div>
+            <button id="_mod-listbans" class="_adm-btn _adm-btn-ghost" style="margin-bottom:10px;">Load Banned List</button>
+            <div id="_mod-banlist"></div>
+          </div>
+        </div>
+
+        <!-- TAB 4: Broadcast -->
+        <div id="_adm-t4" class="_adm-pane" style="padding:16px;display:none;">
+          <div class="_adm-card" style="margin-bottom:12px;">
+            <div class="_adm-card-title">📢 Broadcast to ALL Online Players</div>
+            <textarea id="_bc-msg" class="_adm-input" placeholder="Message…" style="height:80px;resize:none;margin-bottom:10px;"></textarea>
+            <button id="_bc-btn" class="_adm-btn _adm-btn-cyn" style="width:100%;">📢 Send Announcement</button>
+          </div>
+          <div id="_bc-result" style="min-height:20px;text-align:center;font-size:13px;font-weight:600;"></div>
+        </div>
+
+        <!-- TAB 5: Search -->
+        <div id="_adm-t5" class="_adm-pane" style="padding:16px;display:none;">
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <input id="_srch-inp" class="_adm-input" placeholder="Search any player by name, UUID, or fingerprint…" style="flex:1;"/>
+            <button id="_srch-btn" class="_adm-btn _adm-btn-pri">🔍 Search</button>
+          </div>
+          <div id="_srch-result"></div>
+        </div>
+
+      </div><!-- /_adm-body -->
+
+      <!-- PLAYER INFO MODAL (inside wrap) -->
+      <div id="_pi-modal" style="
+        display:none;position:absolute;inset:0;z-index:10;
+        background:rgba(7,9,22,0.88);backdrop-filter:blur(12px);
+        align-items:center;justify-content:center;
+      ">
+        <div style="
+          background:linear-gradient(160deg,rgba(13,17,45,0.99),rgba(10,12,30,0.99));
+          border:1px solid rgba(99,102,241,0.3);border-radius:20px;
+          padding:24px;width:420px;max-height:88%;overflow-y:auto;
+          position:relative;animation:_admSlide 0.25s ease;
+          box-shadow:0 0 60px rgba(99,102,241,0.2);
+        ">
+          <button id="_pi-close" style="position:absolute;top:12px;right:14px;background:none;border:none;color:rgba(148,163,184,0.35);font-size:18px;cursor:pointer;">✕</button>
+          <div id="_pi-content"></div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(wrap);
+
+    // ── Draggable ────────────────────────────────────────────────────────
+    const tbar = wrap.querySelector('#_adm-tbar');
+    let _drag = false, _ox = 0, _oy = 0;
+    tbar.addEventListener('mousedown', e => {
+      _drag = true;
+      _ox = e.clientX - wrap.offsetLeft;
+      _oy = e.clientY - wrap.offsetTop;
+      tbar.style.cursor = 'grabbing';
+    });
+    document.addEventListener('mousemove', e => {
+      if (!_drag) return;
+      const nx = Math.max(0, Math.min(window.innerWidth - wrap.offsetWidth, e.clientX - _ox));
+      const ny = Math.max(0, Math.min(window.innerHeight - wrap.offsetHeight, e.clientY - _oy));
+      wrap.style.left = nx + 'px';
+      wrap.style.top  = ny + 'px';
+    });
+    document.addEventListener('mouseup', () => { _drag = false; tbar.style.cursor = 'grab'; });
+
+    // ── Close / Minimize ─────────────────────────────────────────────────
+    let _minimized = false;
+    wrap.querySelector('#_adm-close').onclick = () => { wrap.remove(); };
+    wrap.querySelector('#_adm-minimize').onclick = () => {
+      _minimized = !_minimized;
+      wrap.querySelector('#_adm-tabs').style.display = _minimized ? 'none' : 'flex';
+      wrap.querySelector('#_adm-body').style.display = _minimized ? 'none' : 'flex';
+      wrap.style.maxHeight = _minimized ? 'none' : '90vh';
+      wrap.querySelector('#_adm-minimize').textContent = _minimized ? '□ Max' : '− Min';
+    };
+
+    // ── Status helper ────────────────────────────────────────────────────
+    const _status = wrap.querySelector('#_adm-status');
+    function _setStatus(msg, col = '#818cf8') {
+      _status.textContent = msg; _status.style.color = col;
+      clearTimeout(_status._t);
+      _status._t = setTimeout(() => { _status.textContent = ''; }, 3500);
+    }
+
+    // ── Result helpers ───────────────────────────────────────────────────
+    function _res(id, msg, ok = true) {
+      const el = wrap.querySelector(id);
+      if (!el) return;
+      el.textContent = msg;
+      el.style.color = ok ? '#10b981' : '#ef4444';
+      el.style.background = ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.textContent = ''; el.style.background = 'transparent'; }, 4000);
+    }
+
+    // ── Supabase find player ─────────────────────────────────────────────
+    async function _find(q) {
+      q = (q || '').trim();
+      if (!q) return null;
+      // UUID-like
+      if (q.includes('-') || q.length > 24) {
+        const r = await sbFetch(`players?id=eq.${encodeURIComponent(q)}&select=*`);
+        if (r && r.length) return r[0];
+      }
+      const r = await sbFetch(`players?name=ilike.${encodeURIComponent(q.toUpperCase())}&select=*&limit=1`);
+      return r && r.length ? r[0] : null;
+    }
+
+    // ── TABS ─────────────────────────────────────────────────────────────
+    wrap.querySelectorAll('._adm-tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        wrap.querySelectorAll('._adm-tab-btn').forEach(b => b.classList.remove('_active'));
+        btn.classList.add('_active');
+        wrap.querySelectorAll('._adm-pane').forEach((p, i) => {
+          p.style.display = String(i) === btn.dataset.t ? 'block' : 'none';
+        });
+      };
+    });
+
+    // ── Player info modal ────────────────────────────────────────────────
+    const _pi = wrap.querySelector('#_pi-modal');
+    const _piContent = wrap.querySelector('#_pi-content');
+    wrap.querySelector('#_pi-close').onclick = () => { _pi.style.display = 'none'; };
+    _pi.addEventListener('click', e => { if (e.target === _pi) _pi.style.display = 'none'; });
+
+    async function _showPI(p) {
+      _piContent.innerHTML = `<div style="text-align:center;padding:20px;color:rgba(148,163,184,0.4);font-size:12px;">Loading…</div>`;
+      _pi.style.display = 'flex';
+
+      // Fetch scores + ban status
+      let best = '—', totalGames = 0, banInfo = null;
+      try {
+        const sc = await sbFetch(`scores?player_id=eq.${p.id}&order=score.desc&limit=1&select=score`);
+        if (sc && sc.length) best = sc[0].score;
+        const cnt = await sbFetch(`scores?player_id=eq.${p.id}&select=score`);
+        if (cnt) totalGames = cnt.length;
+        const bn = await sbFetch(`banned?player_id=eq.${p.id}&select=reason`);
+        if (bn && bn.length) banInfo = bn[0].reason;
+      } catch(e) {}
+
+      const fields = [
+        ['👤 Name',        p.name],
+        ['🆔 UUID',        p.id],
+        ['💎 Gems',        `${p.gems || 0} 💎`],
+        ['🏆 Best Score',  best],
+        ['🎮 Games Played',totalGames],
+        ['🎨 Active Theme',p.theme || 'classic'],
+        ['🔓 Owned Themes',p.owned_themes || 'classic'],
+        ['🖥️ OS',         `${_osEmoji(p.os)} ${p.os || 'Unknown'}`],
+        ['🌍 Browser',     p.platform || 'Unknown'],
+        ['🔏 Fingerprint', p.fingerprint || 'none'],
+        ['🕐 Last Active', _fmtDate(p.updated_at)],
+        ['📅 Joined',      _fmtDate(p.created_at)],
+        ['🚫 Status',      banInfo ? `BANNED: ${banInfo}` : 'Active'],
+      ];
+
+      _piContent.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(99,102,241,0.12);">
+          <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.12));border:1px solid rgba(99,102,241,0.28);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${_osEmoji(p.os)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:0.03em;">${p.name}</div>
+            <div style="display:flex;gap:6px;align-items:center;margin-top:3px;">
+              ${_banPill(!!banInfo)}
+              <span style="font-size:11px;color:rgba(148,163,184,0.35);">${p.theme || 'classic'}</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:20px;font-weight:800;color:#ffe566;">${p.gems || 0}</div>
+            <div style="font-size:10px;color:rgba(148,163,184,0.4);">GEMS</div>
+          </div>
+        </div>
+
+        ${fields.map(([k,v]) => `
+          <div class="_adm-row">
+            <span class="_adm-row-key">${k}</span>
+            <span class="_adm-row-val" style="${k.includes('UUID')||k.includes('Finger')?'font-family:monospace;font-size:10px;':''}${k.includes('Status')&&banInfo?'color:#ef4444;':''}">${v}</span>
+          </div>
+        `).join('')}
+
+        <div style="display:flex;gap:7px;margin-top:18px;flex-wrap:wrap;">
+          <button class="_adm-btn _adm-btn-grn _pi-give">💎 +10 Gems</button>
+          <button class="_adm-btn _adm-btn-red _pi-take">💸 −10 Gems</button>
+          <button class="_adm-btn _adm-btn-red _pi-ban" style="background:linear-gradient(135deg,#7f1d1d,#b91c1c);">🔨 Ban</button>
+          <button class="_adm-btn _adm-btn-grn _pi-unban" style="background:linear-gradient(135deg,#064e3b,#065f46);">✅ Unban</button>
+          <button class="_adm-btn _adm-btn-ghost _pi-copy">📋 Copy UUID</button>
+        </div>
+        <div id="_pi-res" style="margin-top:10px;font-size:12px;font-weight:600;min-height:16px;"></div>
+      `;
+
+      const pres = _piContent.querySelector('#_pi-res');
+      const setPRes = (msg, ok=true) => { pres.textContent=msg; pres.style.color=ok?'#10b981':'#ef4444'; };
+
+      _piContent.querySelector('._pi-give').onclick = async () => {
+        const ng = (p.gems||0)+10;
+        await sbFetch(`players?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({gems:ng}) });
+        await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'givegems',payload:{amount:10,newGems:ng},seen:false}) });
+        p.gems = ng; setPRes('✅ +10 gems given!');
+      };
+      _piContent.querySelector('._pi-take').onclick = async () => {
+        const ng = Math.max(0,(p.gems||0)-10);
+        await sbFetch(`players?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({gems:ng}) });
+        await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'takegems',payload:{amount:10,newGems:ng},seen:false}) });
+        p.gems = ng; setPRes('✅ −10 gems taken!');
+      };
+      _piContent.querySelector('._pi-ban').onclick = async () => {
+        const reason = prompt('Ban reason:') || 'Admin ban';
+        await sbFetch('banned', { method:'POST', body:JSON.stringify({player_id:p.id,name:p.name,reason,fingerprint:p.fingerprint||null,banned_at:new Date().toISOString()}) });
+        await sbFetch(`scores?player_id=eq.${p.id}`, { method:'DELETE' });
+        await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'ban',payload:{reason},seen:false}) });
+        setPRes('🔨 Banned + scores deleted', false);
+      };
+      _piContent.querySelector('._pi-unban').onclick = async () => {
+        await sbFetch(`banned?player_id=eq.${p.id}`, { method:'DELETE' });
+        if (p.fingerprint) await sbFetch(`banned?fingerprint=eq.${encodeURIComponent(p.fingerprint)}`, { method:'DELETE' });
+        await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'unban',payload:{},seen:false}) });
+        setPRes('✅ Unbanned!');
+      };
+      _piContent.querySelector('._pi-copy').onclick = () => {
+        navigator.clipboard.writeText(p.id).catch(()=>{});
+        setPRes('📋 UUID copied!');
+      };
+    }
+
+    // ── Render player row ────────────────────────────────────────────────
+    function _renderPRow(p) {
+      const el = document.createElement('div');
+      el.className = '_prow';
+      el.innerHTML = `
+        <div style="width:38px;height:38px;border-radius:11px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${_osEmoji(p.os)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:13px;color:#f1f5f9;letter-spacing:0.03em;">${p.name} ${p.fingerprint?'':'<span style="font-size:9px;color:rgba(148,163,184,0.3);">no fp</span>'}</div>
+          <div style="font-size:10px;color:rgba(148,163,184,0.3);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.id}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-right:4px;">
+          <div style="font-size:13px;font-weight:700;color:#ffe566;">💎 ${p.gems||0}</div>
+          <div style="font-size:10px;color:rgba(148,163,184,0.3);">${_osEmoji(p.os)} ${p.os||'?'}</div>
+        </div>
+        <div style="font-size:16px;color:rgba(99,102,241,0.4);">›</div>
+      `;
+      el.onclick = () => _showPI(p);
+      return el;
+    }
+
+    // ── TAB 0: Load players ──────────────────────────────────────────────
+    async function _loadPlayers() {
+      const search = wrap.querySelector('#_adm-psearch').value.trim().toLowerCase();
+      const sort   = wrap.querySelector('#_adm-psort').value;
+      _setStatus('Loading…');
+      try {
+        const players = await sbFetch(`players?order=${sort}&limit=80&select=*`);
+        const list = wrap.querySelector('#_adm-plist');
+        list.innerHTML = '';
+        const filtered = search
+          ? (players||[]).filter(p => p.name.toLowerCase().includes(search) || p.id.toLowerCase().includes(search))
+          : (players||[]);
+        wrap.querySelector('#_adm-pcount').textContent = `${filtered.length} player${filtered.length!==1?'s':''} shown`;
+        if (!filtered.length) {
+          list.innerHTML = '<div style="color:rgba(148,163,184,0.25);text-align:center;padding:24px;font-size:13px;">No players found</div>';
+        } else {
+          filtered.forEach(p => list.appendChild(_renderPRow(p)));
+        }
+        _setStatus(`${filtered.length} loaded`, '#10b981');
+      } catch(e) { _setStatus('Error', '#ef4444'); }
+    }
+
+    wrap.querySelector('#_adm-pload').onclick = _loadPlayers;
+    wrap.querySelector('#_adm-psearch').addEventListener('input', () => {
+      clearTimeout(wrap._searchT);
+      wrap._searchT = setTimeout(_loadPlayers, 350);
+    });
+    wrap.querySelector('#_adm-psort').onchange = _loadPlayers;
+
+    // ── TAB 1: Economy ───────────────────────────────────────────────────
+    async function _ecoAction(targetId, amountId, resultId, action) {
+      const t = wrap.querySelector(targetId).value.trim();
+      const a = parseInt(wrap.querySelector(amountId).value);
+      if (!t) return _res(resultId, 'Enter a name or UUID', false);
+      if (isNaN(a) && action !== 'setgems') return _res(resultId, 'Enter an amount', false);
+      _setStatus('Processing…');
+      const p = await _find(t);
+      if (!p) return _res(resultId, '❌ Player not found', false);
+      let ng = p.gems || 0;
+      if (action === 'givegems') ng = ng + a;
+      else if (action === 'takegems') ng = Math.max(0, ng - a);
+      else if (action === 'setgems') ng = a;
+      await sbFetch(`players?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({gems:ng}) });
+      await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action,payload:{amount:a,newGems:ng},seen:false}) });
+      _res(resultId, `✅ ${p.name} now has ${ng} 💎`);
+      _setStatus('Done', '#10b981');
+    }
+
+    wrap.querySelector('#_eco-give-btn').onclick = () => _ecoAction('#_eco-give-t','#_eco-give-a','#_eco-result','givegems');
+    wrap.querySelector('#_eco-take-btn').onclick = () => _ecoAction('#_eco-take-t','#_eco-take-a','#_eco-result','takegems');
+    wrap.querySelector('#_eco-set-btn').onclick  = () => _ecoAction('#_eco-set-t','#_eco-set-a','#_eco-result','setgems');
+
+    wrap.querySelector('#_eco-thm-btn').onclick = async () => {
+      const t = wrap.querySelector('#_eco-thm-t').value.trim();
+      const theme = wrap.querySelector('#_eco-thm-s').value;
+      if (!t) return _res('#_eco-result', 'Enter name or UUID', false);
+      const p = await _find(t);
+      if (!p) return _res('#_eco-result', '❌ Player not found', false);
+      const owned = p.owned_themes ? p.owned_themes.split(',') : ['classic'];
+      if (!owned.includes(theme)) owned.push(theme);
+      const ownedStr = owned.join(',');
+      await sbFetch(`players?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({owned_themes:ownedStr}) });
+      await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'addtheme',payload:{theme,owned_themes:ownedStr},seen:false}) });
+      _res('#_eco-result', `✅ ${theme} granted to ${p.name}`);
+    };
+
+    // ── TAB 2: Stats ─────────────────────────────────────────────────────
+    wrap.querySelector('#_st-load').onclick = async () => {
+      _setStatus('Loading stats…');
+      try {
+        const [players, scores, bans, recent] = await Promise.all([
+          sbFetch('players?select=gems'),
+          sbFetch('scores?select=name,score,player_id,created_at&order=score.desc&limit=200'),
+          sbFetch('banned?select=player_id'),
+          sbFetch('scores?select=name,score,created_at&order=created_at.desc&limit=8'),
+        ]);
+
+        wrap.querySelector('#_st-players').textContent = (players||[]).length;
+        wrap.querySelector('#_st-games').textContent   = (scores||[]).length;
+        wrap.querySelector('#_st-gems').textContent    = (players||[]).reduce((s,p)=>s+(p.gems||0),0).toLocaleString();
+        wrap.querySelector('#_st-bans').textContent    = (bans||[]).length;
+
+        // Leaderboard (best score per player)
+        const seen = new Map();
+        for (const r of (scores||[])) { if (!seen.has(r.player_id)) seen.set(r.player_id, r); }
+        const top = [...seen.values()].sort((a,b)=>b.score-a.score).slice(0,10);
+        const medals = ['🥇','🥈','🥉'];
+        wrap.querySelector('#_st-lb').innerHTML = top.length ? top.map((e,i)=>`
+          <div class="_adm-row">
+            <span style="color:#94a3b8;font-size:13px;">${medals[i]||`<span style="color:rgba(148,163,184,0.35)">${i+1}.</span>`} ${e.name}</span>
+            <span style="color:#ffe566;font-weight:700;font-size:13px;">${e.score}</span>
+          </div>
+        `).join('') : '<div style="color:rgba(148,163,184,0.25);font-size:12px;padding:8px;">No scores yet</div>';
+
+        // Rich list (top gems)
+        const richPlayers = await sbFetch('players?select=name,gems&order=gems.desc&limit=10');
+        wrap.querySelector('#_st-rich').innerHTML = (richPlayers||[]).map((p,i)=>`
+          <div class="_adm-row">
+            <span style="color:#94a3b8;font-size:13px;">${i+1}. ${p.name}</span>
+            <span style="color:#ffe566;font-weight:700;font-size:13px;">💎 ${p.gems||0}</span>
+          </div>
+        `).join('');
+
+        // Recent
+        wrap.querySelector('#_st-recent').innerHTML = (recent||[]).map(r=>`
+          <div class="_adm-row">
+            <span style="color:#94a3b8;font-size:13px;">${r.name}</span>
+            <div style="display:flex;gap:12px;">
+              <span style="color:#ffe566;font-weight:700;font-size:13px;">${r.score}</span>
+              <span style="color:rgba(148,163,184,0.3);font-size:11px;">${_fmtDate(r.created_at)}</span>
+            </div>
+          </div>
+        `).join('');
+
+        _setStatus('Stats loaded', '#10b981');
+      } catch(e) { _setStatus('Error loading stats', '#ef4444'); }
+    };
+
+    // ── TAB 3: Moderation ────────────────────────────────────────────────
+    wrap.querySelector('#_mod-ban-btn').onclick = async () => {
+      const t = wrap.querySelector('#_mod-ban-t').value.trim();
+      const r = wrap.querySelector('#_mod-ban-r').value.trim() || 'Admin ban';
+      if (!t) return _res('#_mod-result','Enter name or UUID',false);
+      const p = await _find(t);
+      if (!p) return _res('#_mod-result','❌ Player not found',false);
+      await sbFetch('banned', { method:'POST', body:JSON.stringify({player_id:p.id,name:p.name,reason:r,fingerprint:p.fingerprint||null,banned_at:new Date().toISOString()}) });
+      await sbFetch(`scores?player_id=eq.${p.id}`, { method:'DELETE' });
+      await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'ban',payload:{reason:r},seen:false}) });
+      _res('#_mod-result',`🔨 ${p.name} banned. Scores deleted.`,false);
+    };
+
+    wrap.querySelector('#_mod-unban-btn').onclick = async () => {
+      const t = wrap.querySelector('#_mod-unban-t').value.trim();
+      if (!t) return _res('#_mod-result','Enter name or UUID',false);
+      const p = await _find(t);
+      if (!p) return _res('#_mod-result','❌ Player not found',false);
+      await sbFetch(`banned?player_id=eq.${p.id}`, { method:'DELETE' });
+      if (p.fingerprint) await sbFetch(`banned?fingerprint=eq.${encodeURIComponent(p.fingerprint)}`, { method:'DELETE' });
+      await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'unban',payload:{},seen:false}) });
+      _res('#_mod-result',`✅ ${p.name} unbanned`);
+    };
+
+    wrap.querySelector('#_mod-ren-btn').onclick = async () => {
+      const uuid = wrap.querySelector('#_mod-ren-u').value.trim();
+      const name = wrap.querySelector('#_mod-ren-n').value.trim().toUpperCase();
+      if (!uuid || !name) return _res('#_mod-result','Fill both fields',false);
+      await sbFetch(`players?id=eq.${uuid}`, { method:'PATCH', body:JSON.stringify({name}) });
+      await sbFetch(`scores?player_id=eq.${uuid}`, { method:'PATCH', body:JSON.stringify({name}) });
+      _res('#_mod-result',`✅ Renamed to ${name}`);
+    };
+
+    wrap.querySelector('#_mod-rst-btn').onclick = async () => {
+      const t = wrap.querySelector('#_mod-rst-t').value.trim();
+      if (!t) return _res('#_mod-result','Enter name or UUID',false);
+      const p = await _find(t);
+      if (!p) return _res('#_mod-result','❌ Player not found',false);
+      if (!confirm(`Reset ALL scores for ${p.name}? This cannot be undone.`)) return;
+      await sbFetch(`scores?player_id=eq.${p.id}`, { method:'DELETE' });
+      _res('#_mod-result',`✅ Scores cleared for ${p.name}`);
+    };
+
+    wrap.querySelector('#_mod-listbans').onclick = async () => {
+      const bans = await sbFetch('banned?select=*&order=banned_at.desc');
+      const el = wrap.querySelector('#_mod-banlist');
+      el.innerHTML = '';
+      if (!bans || !bans.length) {
+        el.innerHTML = '<div style="color:rgba(148,163,184,0.25);font-size:12px;padding:8px;">No banned players</div>';
+        return;
+      }
+      bans.forEach(b => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(99,102,241,0.07);';
+        row.innerHTML = `
+          <div>
+            <div style="font-size:13px;color:#f1f5f9;font-weight:600;">${b.name}</div>
+            <div style="font-size:11px;color:rgba(239,68,68,0.6);">${b.reason}</div>
+            <div style="font-size:10px;color:rgba(148,163,184,0.25);font-family:monospace;">${b.player_id}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="_adm-btn _adm-btn-grn" style="font-size:11px;padding:5px 9px;" data-unban="${b.player_id}" data-fp="${b.fingerprint||''}">✅ Unban</button>
+          </div>
+        `;
+        row.querySelector('[data-unban]').onclick = async (e) => {
+          const pid = e.currentTarget.dataset.unban;
+          const fp  = e.currentTarget.dataset.fp;
+          await sbFetch(`banned?player_id=eq.${pid}`, { method:'DELETE' });
+          if (fp) await sbFetch(`banned?fingerprint=eq.${encodeURIComponent(fp)}`, { method:'DELETE' });
+          await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:pid,action:'unban',payload:{},seen:false}) });
+          row.remove();
+        };
+        el.appendChild(row);
+      });
+    };
+
+    // ── TAB 4: Broadcast ─────────────────────────────────────────────────
+    wrap.querySelector('#_bc-btn').onclick = async () => {
+      const msg = wrap.querySelector('#_bc-msg').value.trim();
+      if (!msg) return _res('#_bc-result','Enter a message',false);
+      await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:'broadcast',action:'announce',payload:{message:msg,from:'Admin'},seen:false}) });
+      wrap.querySelector('#_bc-msg').value = '';
+      _res('#_bc-result','📢 Broadcast sent to all online players!');
+    };
+
+    // ── TAB 5: Search ────────────────────────────────────────────────────
+    wrap.querySelector('#_srch-btn').onclick = async () => {
+      const q = wrap.querySelector('#_srch-inp').value.trim();
+      const el = wrap.querySelector('#_srch-result');
+      if (!q) return;
+      el.innerHTML = '<div style="color:rgba(148,163,184,0.3);font-size:12px;padding:8px;">Searching…</div>';
+      try {
+        // Try multiple search strategies
+        const [byName, byUuid, byFp] = await Promise.all([
+          sbFetch(`players?name=ilike.${encodeURIComponent('%'+q.toUpperCase()+'%')}&select=*&limit=10`),
+          sbFetch(`players?id=eq.${encodeURIComponent(q)}&select=*&limit=5`).catch(()=>[]),
+          sbFetch(`players?fingerprint=eq.${encodeURIComponent(q)}&select=*&limit=5`).catch(()=>[]),
+        ]);
+        const all = [...(byName||[]), ...(byUuid||[]), ...(byFp||[])];
+        // Dedupe by id
+        const seen2 = new Map(); all.forEach(p => { if (!seen2.has(p.id)) seen2.set(p.id,p); });
+        const results = [...seen2.values()];
+        el.innerHTML = '';
+        if (!results.length) {
+          el.innerHTML = '<div style="color:rgba(148,163,184,0.25);font-size:13px;padding:12px;text-align:center;">No players found</div>';
+        } else {
+          el.innerHTML = `<div style="font-size:11px;color:rgba(148,163,184,0.35);margin-bottom:8px;">${results.length} result${results.length!==1?'s':''}</div>`;
+          const list = document.createElement('div');
+          list.style.cssText = 'display:flex;flex-direction:column;gap:5px;';
+          results.forEach(p => list.appendChild(_renderPRow(p)));
+          el.appendChild(list);
+        }
+      } catch(e) {
+        el.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:8px;">Search failed</div>';
+      }
+    };
+    wrap.querySelector('#_srch-inp').addEventListener('keydown', e => {
+      if (e.key === 'Enter') wrap.querySelector('#_srch-btn').click();
+    });
+
+    // Auto-load players on open
+    _loadPlayers();
+  }
+
+})();
+
 </script>
 </body>
 </html>
