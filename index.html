@@ -121,6 +121,11 @@ canvas{display:block;cursor:pointer;background:#000;}
   80%{opacity:1;}
   100%{transform:translateY(100vh) scale(1.2) rotate(360deg);opacity:0;}
 }
+@keyframes gemRise{
+  0%{transform:translateY(0) scale(1) rotate(0deg);opacity:1;}
+  80%{opacity:1;}
+  100%{transform:translateY(-110vh) scale(0.3) rotate(-360deg);opacity:0;}
+}
 @keyframes gemPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
 #gem-award{
   position:fixed;inset:0;z-index:9000;pointer-events:none;
@@ -515,7 +520,13 @@ function render() {
   ctx.restore();
 }
 
-function masterLoop() {
+let lastFrameTime = 0;
+let deltaTime = 1;
+
+function masterLoop(ts) {
+  if (lastFrameTime) deltaTime = Math.min((ts - lastFrameTime) / 16.667, 3);
+  else deltaTime = 1;
+  lastFrameTime = ts;
   stepParticles();
   if (running) stepGame();
   render();
@@ -533,11 +544,11 @@ function stepParticles() {
 
 function stepGame() {
   if (mover.axis==='x') {
-    mover.px += mover.spd*mover.dir;
+    mover.px += mover.spd*mover.dir*deltaTime;
     if (mover.px >= mover._max) mover.dir=-1;
     if (mover.px <= mover._min) mover.dir= 1;
   } else {
-    mover.pz += mover.spd*mover.dir;
+    mover.pz += mover.spd*mover.dir*deltaTime;
     if (mover.pz >= mover._max) mover.dir=-1;
     if (mover.pz <= mover._min) mover.dir= 1;
   }
@@ -760,12 +771,6 @@ const PLAYER_UUID = getOrCreateUUID();
 let playerName = localStorage.getItem('stack:name') || '';
 let deviceFingerprint = localStorage.getItem('stack:fp') || '';
 
-// Generate fingerprint immediately (async, stores in module-level var)
-getFingerprint().then(fp => {
-  deviceFingerprint = fp;
-  localStorage.setItem('stack:fp', fp);
-});
-
 async function loadPlayer() {
   try {
     const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=*`);
@@ -948,43 +953,79 @@ function showAnnouncement(msg, from) {
   }, 5000);
 }
 
-// ── Gem take animation — mirrors gem rain but red ─────────
+// ── Gem take animation — mirrors gem rain but red upward ──
 function showGemTake(amount) {
-  // Big center text
-  const msg = document.createElement('div');
-  msg.style.cssText = `
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    z-index:9000;pointer-events:none;text-align:center;
-    font-family:'Bebas Neue',cursive;font-size:64px;letter-spacing:6px;
-    color:#ff4444;text-shadow:0 0 40px #ff0000,0 0 80px #ff0000;
-    animation:fu 1.2s ease-out forwards;
-  `;
+  // Use the existing gem-award overlay but red
+  const overlay = document.getElementById('gem-award');
+  const msg = document.getElementById('gem-award-msg');
+  const sub = document.getElementById('gem-award-sub');
   msg.textContent = `-${amount} 💎`;
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 1200);
-
-  // Flying gems upward (reverse of rain)
-  for (let i = 0; i < 16; i++) {
+  msg.style.color = '#ff4444';
+  msg.style.textShadow = '0 0 40px #ff0000';
+  sub.textContent = 'GEMS REMOVED 👑';
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => { msg.style.opacity = '1'; sub.style.opacity = '1'; });
+  // Gems fly UP and off screen
+  for (let i = 0; i < 24; i++) {
     setTimeout(() => {
       const el = document.createElement('div');
-      el.style.cssText = `
-        position:fixed;font-size:24px;pointer-events:none;z-index:8999;
-        left:${20 + Math.random()*60}vw;
-        bottom:-40px;
-        animation:gemRise ${1.2 + Math.random()*0.8}s ease-in forwards;
-        opacity:1;
-      `;
+      el.className = 'gem-particle';
       el.textContent = '💎';
-      const s = document.createElement('style');
-      s.textContent = `@keyframes gemRise{0%{transform:translateY(0) scale(1);opacity:1;}100%{transform:translateY(-110vh) scale(0.3) rotate(-360deg);opacity:0;}}`;
-      document.head.appendChild(s);
+      el.style.left   = Math.random() * 100 + 'vw';
+      el.style.bottom = '0px';
+      el.style.top    = 'auto';
+      el.style.animation = 'none';
+      el.style.transition = 'none';
+      const dur = 1.2 + Math.random() * 0.8;
+      el.style.cssText += `;animation:gemRise ${dur}s ease-in forwards;`;
       document.body.appendChild(el);
-      setTimeout(() => el.remove(), 2200);
-    }, i * 60);
+      setTimeout(() => el.remove(), dur * 1000 + 100);
+    }, i * 80);
   }
+  setTimeout(() => {
+    msg.style.opacity = '0'; sub.style.opacity = '0';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      // Reset colors for next gem award
+      msg.style.color = '';
+      msg.style.textShadow = '';
+      sub.textContent = 'FROM NOG 👑';
+    }, 500);
+  }, 3500);
 }
 
-// ── Notification toast (non-critical) ────────────────────
+// ── Theme unlock animation ────────────────────────────────
+function showThemeUnlock(themeName) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    position:fixed;inset:0;z-index:9500;pointer-events:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(192,132,252,0.08);
+  `;
+  el.innerHTML = `
+    <div style="
+      background:rgba(0,0,0,0.88);backdrop-filter:blur(20px);
+      border:1px solid rgba(192,132,252,0.5);border-radius:20px;
+      padding:32px 44px;text-align:center;
+      animation:themeUnlockPop 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      transform:scale(0.7);opacity:0;
+    ">
+      <div style="font-size:48px;margin-bottom:10px;">🎨</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:5px;color:rgba(192,132,252,0.7);margin-bottom:6px;">THEME UNLOCKED</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:40px;letter-spacing:4px;color:#c084fc;text-shadow:0 0 30px #c084fc;">${themeName.toUpperCase()}</div>
+      <div style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.35);margin-top:8px;">Added to your collection!</div>
+    </div>
+  `;
+  const s = document.createElement('style');
+  s.textContent = `@keyframes themeUnlockPop{0%{transform:scale(0.7);opacity:0;}100%{transform:scale(1);opacity:1;}}`;
+  document.head.appendChild(s);
+  document.body.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.4s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 400);
+  }, 3500);
+}
 function showToast(title, msg, color = '#ffe566') {
   const old = document.getElementById('stack-toast');
   if (old) old.remove();
@@ -1030,6 +1071,12 @@ function startRealtimeListener() {
   if (!PLAYER_UUID || realtimeStarted) return;
   realtimeStarted = true;
 
+  // Generate + cache fingerprint now that all functions are defined
+  getFingerprint().then(fp => {
+    deviceFingerprint = fp;
+    localStorage.setItem('stack:fp', fp);
+  });
+
   checkBanned();
 
   setTimeout(async () => {
@@ -1061,9 +1108,9 @@ function startRealtimeListener() {
         const myActions = await sbFetch(
           `admin_actions?player_id=eq.${PLAYER_UUID}&seen=eq.false&order=id.asc&limit=10`
         );
-        // ── Admin actions — fetch broadcasts (null player_id) with id > lastActionId
+        // ── Admin actions — fetch broadcasts with id > lastActionId
         const broadcasts = await sbFetch(
-          `admin_actions?player_id=is.null&seen=eq.false&id=gt.${lastActionId}&order=id.asc&limit=10`
+          `admin_actions?player_id=eq.broadcast&id=gt.${lastActionId}&order=id.asc&limit=10`
         );
 
         const allActions = [
@@ -1098,7 +1145,7 @@ function startRealtimeListener() {
             const ownedStr = a.payload?.owned_themes;
             if (theme && ownedStr) {
               ownedPals = new Set(ownedStr.split(','));
-              showToast('🎨 THEME UNLOCKED', `${theme.toUpperCase()} added to your collection!`, '#c084fc');
+              showThemeUnlock(theme);
             }
           } else if (a.action === 'announce') {
             const msg = a.payload?.message || '';
@@ -1107,14 +1154,14 @@ function startRealtimeListener() {
           }
 
           // Mark player-specific actions as seen
-          if (a.player_id !== null) {
+          if (a.player_id !== 'broadcast') {
             await sbFetch(`admin_actions?id=eq.${a.id}`, {
               method: 'PATCH',
               headers: { 'Prefer': 'return=minimal' },
               body: JSON.stringify({ seen: true })
             });
           } else {
-            // For broadcasts track locally so we don't show again
+            // Track broadcast id locally so each client only sees it once
             if (a.id > lastActionId) {
               lastActionId = a.id;
               localStorage.setItem('stack:lastActionId', lastActionId);
@@ -1286,6 +1333,19 @@ async function logToDiscord(type, extra = null) {
         ],
         footer: { text: 'Stack Game · Shop Log' }, timestamp: now.toISOString()
       };
+    } else if (type === 'daily') {
+      embed = {
+        title: '🎁  Daily Reward Claimed', color: 0xffe566,
+        fields: [
+          { name: '👤  Player',    value: `\`${playerName}\``,   inline: true },
+          { name: '💎  Received',  value: `\`+${extra} 💎\``,    inline: true },
+          { name: '🖥️  OS',       value: `\`${dev.os}\``,       inline: true },
+          { name: '🌍  Browser',   value: `\`${dev.platform}\``, inline: true },
+          { name: '🆔  UUID',      value: `\`${PLAYER_UUID}\``,  inline: false },
+          { name: '🕐  Timestamp', value: `\`${ts} ET\``,        inline: true },
+        ],
+        footer: { text: 'Stack Game · Daily Reward' }, timestamp: now.toISOString()
+      };
     }
     await fetch(WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embeds: [embed] }) });
   } catch(e) {}
@@ -1434,45 +1494,81 @@ document.getElementById('btn-start').onclick=startGame;
 document.getElementById('btn-retry').onclick=startGame;
 
 // ═══════════════════════════════════════════════════════
-//  DAILY REWARD
+//  DAILY REWARD — server-side validated, tamper detection
 // ═══════════════════════════════════════════════════════
 const DAILY_KEY = () => `stack:daily:${PLAYER_UUID}`;
 const DAILY_MS  = 24 * 60 * 60 * 1000;
 let countdownInterval = null;
 
-function getDailyData() { try { return JSON.parse(localStorage.getItem(DAILY_KEY()))||null; } catch(e) { return null; } }
-function setDailyData(ts) { localStorage.setItem(DAILY_KEY(), JSON.stringify({ claimedAt: ts })); }
 function formatCountdown(ms) {
   if (ms<=0) return '00:00:00';
   const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000), s=Math.floor((ms%60000)/1000);
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
-function openGift() {
-  const data = getDailyData(); const now = Date.now();
+// ── Tamper detection ─────────────────────────────────────
+async function handleTamper(reason) {
+  localStorage.clear();
+  try {
+    const fp = deviceFingerprint || '';
+    await sbFetch('banned', { method:'POST', body:JSON.stringify({ player_id:PLAYER_UUID, name:playerName||'UNKNOWN', reason:`AUTO-BAN: ${reason}`, fingerprint:fp, banned_at:new Date().toISOString() }) });
+    await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({ player_id:PLAYER_UUID, action:'ban', payload:{ reason:`AUTO-BAN: ${reason}` }, seen:false }) });
+  } catch(e) {}
+  isBanned = true;
+  showBanScreen(`AUTO-BAN: ${reason}`);
+}
+
+// Watch for external localStorage edits mid-session
+window.addEventListener('storage', (e) => {
+  if (e.key && e.key.startsWith('stack:daily:') && e.newValue) {
+    try {
+      const data = JSON.parse(e.newValue);
+      const now = Date.now();
+      if (!data.claimedAt || data.claimedAt > now + 60000 || data.claimedAt < 1700000000000) {
+        handleTamper('localStorage daily reward edit detected');
+      }
+    } catch(e2) {}
+  }
+});
+
+async function openGift() {
   const content = document.getElementById('daily-content');
   if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-  if (!data || (now - data.claimedAt) >= DAILY_MS) {
-    gems += 5; setDailyData(now); syncPlayer(); updateHUD();
-    content.innerHTML = `
-      <p style="font-size:13px;color:rgba(255,255,255,0.7);font-family:system-ui,sans-serif;margin-bottom:4px;">You received</p>
-      <div style="font-family:'Bebas Neue',cursive;font-size:52px;color:#ffe566;line-height:1;">+5 💎</div>
-      <p style="font-size:11px;color:rgba(255,255,255,0.35);font-family:system-ui,sans-serif;margin-top:8px;margin-bottom:18px;">Come back tomorrow for more!</p>`;
-  } else {
-    const remaining = DAILY_MS - (now - data.claimedAt);
-    content.innerHTML = `
-      <p id="daily-msg">Already claimed today. Next reward in:</p>
-      <div id="daily-countdown">${formatCountdown(remaining)}</div>
-      <p style="font-size:10px;color:rgba(255,255,255,0.25);font-family:system-ui,sans-serif;margin-bottom:18px;">Come back when the timer hits zero!</p>`;
-    countdownInterval = setInterval(() => {
-      const el = document.getElementById('daily-countdown');
-      if (!el) { clearInterval(countdownInterval); return; }
-      const left = DAILY_MS - (Date.now() - data.claimedAt);
-      if (left<=0) { clearInterval(countdownInterval); el.textContent='00:00:00'; document.getElementById('daily-msg').textContent='Ready to claim!'; }
-      else el.textContent = formatCountdown(left);
-    }, 1000);
-  }
+  content.innerHTML = `<p style="color:rgba(255,255,255,0.4);font-family:system-ui;font-size:12px;">Loading...</p>`;
   document.getElementById('ov-daily').classList.remove('hide');
+  try {
+    // Server is the source of truth for daily claim
+    const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=last_daily,gems`);
+    const serverLastDaily = rows?.[0]?.last_daily ? new Date(rows[0].last_daily).getTime() : 0;
+    const now = Date.now();
+    const canClaim = !serverLastDaily || (now - serverLastDaily) >= DAILY_MS;
+    if (canClaim) {
+      gems += 5;
+      await sbFetch(`players?id=eq.${PLAYER_UUID}`, { method:'PATCH', body:JSON.stringify({ gems, last_daily:new Date(now).toISOString() }) });
+      localStorage.setItem(DAILY_KEY(), JSON.stringify({ claimedAt: now }));
+      updateHUD();
+      logToDiscord('daily', 5);
+      content.innerHTML = `
+        <p style="font-size:13px;color:rgba(255,255,255,0.7);font-family:system-ui,sans-serif;margin-bottom:4px;">You received</p>
+        <div style="font-family:'Bebas Neue',cursive;font-size:52px;color:#ffe566;line-height:1;">+5 💎</div>
+        <p style="font-size:11px;color:rgba(255,255,255,0.35);font-family:system-ui,sans-serif;margin-top:8px;margin-bottom:18px;">Come back tomorrow for more!</p>`;
+    } else {
+      const remaining = DAILY_MS - (now - serverLastDaily);
+      content.innerHTML = `
+        <p id="daily-msg">Already claimed today. Next reward in:</p>
+        <div id="daily-countdown">${formatCountdown(remaining)}</div>
+        <p style="font-size:10px;color:rgba(255,255,255,0.25);font-family:system-ui,sans-serif;margin-bottom:18px;">Come back when the timer hits zero!</p>`;
+      countdownInterval = setInterval(() => {
+        const el = document.getElementById('daily-countdown');
+        if (!el) { clearInterval(countdownInterval); return; }
+        const left = DAILY_MS - (Date.now() - serverLastDaily);
+        if (left<=0) { clearInterval(countdownInterval); el.textContent='00:00:00'; document.getElementById('daily-msg').textContent='Ready to claim!'; }
+        else el.textContent = formatCountdown(left);
+      }, 1000);
+    }
+  } catch(e) {
+    content.innerHTML = `<p style="color:rgba(255,255,255,0.5);font-family:system-ui;font-size:12px;">Could not connect. Try again.</p>`;
+  }
 }
 
 document.getElementById('btn-gift').onclick = openGift;
