@@ -2080,16 +2080,33 @@ document.getElementById('wrap').style.visibility = 'hidden';
     // ── Player info modal ────────────────────────────────────────────────
     const _pi = wrap.querySelector('#_pi-modal');
     const _piContent = wrap.querySelector('#_pi-content');
-    wrap.querySelector('#_pi-close').onclick = () => { _pi.style.display = 'none'; };
-    _pi.addEventListener('click', e => { if (e.target === _pi) _pi.style.display = 'none'; });
+    wrap.querySelector('#_pi-close').onclick = () => { _pi.style.display = 'none'; if (_piPollInterval) { clearInterval(_piPollInterval); _piPollInterval = null; } };
+    _pi.addEventListener('click', e => { if (e.target === _pi) { _pi.style.display = 'none'; if (_piPollInterval) { clearInterval(_piPollInterval); _piPollInterval = null; } } });
+
+    let _piPollInterval = null;
+
+    function _isOnline(updatedAt) {
+      if (!updatedAt) return false;
+      return (Date.now() - new Date(updatedAt).getTime()) < 3 * 60 * 1000;
+    }
+
+    function _onlinePill(updatedAt) {
+      const online = _isOnline(updatedAt);
+      return online
+        ? `<span class="_adm-pill" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">● ONLINE</span>`
+        : `<span class="_adm-pill" style="background:rgba(100,116,139,0.15);color:rgba(148,163,184,0.5);border:1px solid rgba(100,116,139,0.2);">○ OFFLINE</span>`;
+    }
 
     async function _showPI(p) {
       _piContent.innerHTML = `<div style="text-align:center;padding:20px;color:rgba(148,163,184,0.4);font-size:12px;">Loading…</div>`;
       _pi.style.display = 'flex';
+      if (_piPollInterval) { clearInterval(_piPollInterval); _piPollInterval = null; }
 
-      // Fetch scores + ban status
+      // Re-fetch fresh player data (ensures created_at etc.), scores + ban status
       let best = '—', totalGames = 0, banInfo = null;
       try {
+        const fresh = await sbFetch(`players?id=eq.${p.id}&select=*`);
+        if (fresh && fresh.length) p = fresh[0];
         const sc = await sbFetch(`scores?player_id=eq.${p.id}&order=score.desc&limit=1&select=score`);
         if (sc && sc.length) best = sc[0].score;
         const cnt = await sbFetch(`scores?player_id=eq.${p.id}&select=score`);
@@ -2110,7 +2127,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
         ['🌍 Browser',     p.platform || 'Unknown'],
         ['🔏 Fingerprint', p.fingerprint || 'none'],
         ['🕐 Last Active', _fmtDate(p.updated_at)],
-        ['📅 Joined',      _fmtDate(p.created_at)],
+        ['📅 Joined',      p.created_at ? _fmtDate(p.created_at) : '(not recorded)'],
         ['🚫 Status',      banInfo ? `BANNED: ${banInfo}` : 'Active'],
       ];
 
@@ -2120,6 +2137,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
           <div style="flex:1;min-width:0;">
             <div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:0.03em;">${p.name}</div>
             <div style="display:flex;gap:6px;align-items:center;margin-top:3px;">
+              <span id="_pi-online-pill">${_onlinePill(p.updated_at)}</span>
               ${_banPill(!!banInfo)}
               <span style="font-size:11px;color:rgba(148,163,184,0.35);">${p.theme || 'classic'}</span>
             </div>
@@ -2179,6 +2197,17 @@ document.getElementById('wrap').style.visibility = 'hidden';
         navigator.clipboard.writeText(p.id).catch(()=>{});
         setPRes('📋 UUID copied!');
       };
+
+      // Live online/offline polling every 10s
+      _piPollInterval = setInterval(async () => {
+        try {
+          const r = await sbFetch(`players?id=eq.${p.id}&select=updated_at`);
+          if (r && r.length) {
+            const pill = _piContent.querySelector('#_pi-online-pill');
+            if (pill) pill.innerHTML = _onlinePill(r[0].updated_at);
+          }
+        } catch(e) {}
+      }, 10000);
     }
 
     // ── Render player row ────────────────────────────────────────────────
