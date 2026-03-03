@@ -1077,27 +1077,20 @@ function startRealtimeListener() {
 
   // Heartbeat — updates updated_at every 60s so online detection works
   setInterval(async () => {
+    _pingHeartbeat();
+  }, 60000);
+  // Fire heartbeat immediately
+  async function _pingHeartbeat() {
     if (!PLAYER_UUID || !playerName) return;
     try {
       await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
         method: 'PATCH',
         headers: { 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ last_seen: new Date().toISOString(), updated_at: new Date().toISOString() })
+        body: JSON.stringify({ last_seen: new Date().toISOString() })
       });
     } catch(e) {}
-  }, 60000);
-  // Fire once immediately on load
-  setTimeout(async () => {
-    if (PLAYER_UUID && playerName) {
-      try {
-        await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
-          method: 'PATCH',
-          headers: { 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ last_seen: new Date().toISOString(), updated_at: new Date().toISOString() })
-        });
-      } catch(e) {}
-    }
-  }, 3000);
+  }
+  _pingHeartbeat();
 
   setTimeout(async () => {
     try {
@@ -2129,6 +2122,8 @@ document.getElementById('wrap').style.visibility = 'hidden';
       if (_piPollInterval) { clearInterval(_piPollInterval); _piPollInterval = null; }
 
       // Re-fetch fresh player data (ensures created_at etc.), scores + ban status
+      // Also ping our own heartbeat so self-profile shows ONLINE immediately
+      if (p.id === PLAYER_UUID) await _pingHeartbeat().catch(()=>{});
       let best = '—', totalGames = 0, banInfo = null;
       try {
         const fresh = await sbFetch(`players?id=eq.${p.id}&select=*`);
