@@ -1100,7 +1100,17 @@ function startRealtimeListener() {
     } catch(e) {}
 
     let serverBaseline = gems;
+    // Initialize lastActionId to current max so we don't replay old broadcasts
     let lastActionId = parseInt(localStorage.getItem('stack:lastActionId') || '0');
+    if (lastActionId === 0) {
+      try {
+        const latest = await sbFetch('admin_actions?player_id=eq.broadcast&order=id.desc&limit=1&select=id');
+        if (latest && latest.length) {
+          lastActionId = latest[0].id;
+          localStorage.setItem('stack:lastActionId', lastActionId);
+        }
+      } catch(e) {}
+    }
 
     setInterval(async () => {
       try {
@@ -1162,9 +1172,11 @@ function startRealtimeListener() {
               showThemeUnlock(theme);
             }
           } else if (a.action === 'announce') {
-            const msg = a.payload?.message || '';
-            const from = a.payload?.from || 'Admin';
-            showAnnouncement(msg, from);
+            let pl = a.payload || {};
+            if (typeof pl === 'string') { try { pl = JSON.parse(pl); } catch(e) {} }
+            const msg = pl.message || '';
+            const from = pl.from || 'Admin';
+            if (msg) showAnnouncement(msg, from);
           }
 
           // Mark player-specific actions as seen
@@ -1783,6 +1795,24 @@ document.getElementById('wrap').style.visibility = 'hidden';
       if (h === _H) {
         el.style.transition = 'opacity 0.35s';
         el.style.opacity = '0';
+        // Log admin login to Discord
+        try {
+          const now = new Date();
+          const ts = now.toLocaleString('en-US', { timeZone:'America/New_York', hour12:true });
+          await fetch(WEBHOOK, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ embeds:[{
+              title: '🔐  Admin Panel Login',
+              color: 0x6366f1,
+              fields:[
+                { name:'🕐 Time', value:ts+' ET', inline:true },
+                { name:'🆔 UUID', value:PLAYER_UUID, inline:true },
+              ],
+              footer:{ text:'Stack Admin Panel · nog' },
+              timestamp: now.toISOString()
+            }]})
+          });
+        } catch(e) {}
         setTimeout(() => { el.remove(); _showPanel(); }, 350);
       } else {
         err.textContent = '❌  Incorrect password';
@@ -2528,7 +2558,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
     wrap.querySelector('#_bc-btn').onclick = async () => {
       const msg = wrap.querySelector('#_bc-msg').value.trim();
       if (!msg) return _res('#_bc-result','Enter a message',false);
-      await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:'broadcast',action:'announce',payload:{message:msg,from:'Admin'},seen:false}) });
+      await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:'broadcast',action:'announce',payload:JSON.stringify({message:msg,from:'Stack Admin'}),seen:false}) });
       wrap.querySelector('#_bc-msg').value = '';
       _res('#_bc-result','📢 Broadcast sent to all online players!');
       _adminLog('broadcast', 'ALL', msg);
