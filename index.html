@@ -767,7 +767,7 @@ const PLAYER_UUID = getOrCreateUUID();
 let playerName = localStorage.getItem('stack:name') || '';
 
 async function _pingHeartbeat() {
-  if (!PLAYER_UUID || !playerName) return;
+  if (!PLAYER_UUID) return;
   try {
     await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
       method: 'PATCH',
@@ -1968,10 +1968,11 @@ document.getElementById('wrap').style.visibility = 'hidden';
             </div>
             <div class="_adm-card">
               <div class="_adm-card-title">🔁 Transfer UUID</div>
-              <div style="font-size:11px;color:rgba(148,163,184,0.4);margin-bottom:8px;">Moves all data (gems, themes, scores) from old UUID to new UUID. Use when a player loses their localStorage.</div>
+              <div style="font-size:11px;color:rgba(148,163,184,0.4);margin-bottom:8px;">Moves ALL data (gems, themes, scores, actions) from old UUID to new. Use when cache is cleared.</div>
               <input id="_mod-xfr-old" class="_adm-input" placeholder="Old UUID (from Supabase)" style="margin-bottom:8px;"/>
-              <input id="_mod-xfr-new" class="_adm-input" placeholder="New UUID (from their browser)" style="margin-bottom:10px;"/>
-              <button id="_mod-xfr-btn" class="_adm-btn _adm-btn-cyn" style="width:100%;">🔁 Transfer</button>
+              <input id="_mod-xfr-new" class="_adm-input" placeholder="New UUID (from browser)" style="margin-bottom:6px;"/>
+              <button id="_mod-xfr-selfuuid" class="_adm-btn _adm-btn-ghost" style="width:100%;margin-bottom:8px;font-size:11px;">📋 Paste MY current UUID as New</button>
+              <button id="_mod-xfr-btn" class="_adm-btn _adm-btn-cyn" style="width:100%;">🔁 Transfer All Data</button>
             </div>
             <div class="_adm-card">
               <div class="_adm-card-title">🗑️ Reset Scores</div>
@@ -2409,6 +2410,10 @@ document.getElementById('wrap').style.visibility = 'hidden';
       _res('#_mod-result',`✅ Renamed to ${name}`);
     };
 
+    wrap.querySelector('#_mod-xfr-selfuuid').onclick = () => {
+      wrap.querySelector('#_mod-xfr-new').value = PLAYER_UUID;
+    };
+
     wrap.querySelector('#_mod-xfr-btn').onclick = async () => {
       const oldUUID = wrap.querySelector('#_mod-xfr-old').value.trim();
       const newUUID = wrap.querySelector('#_mod-xfr-new').value.trim();
@@ -2431,14 +2436,14 @@ document.getElementById('wrap').style.visibility = 'hidden';
           // Insert player with new UUID
           await sbFetch('players', { method:'POST', body:JSON.stringify({ ...old, id:newUUID }) });
         }
-        // Transfer scores
+        // Transfer all tables
         await sbFetch(`scores?player_id=eq.${oldUUID}`, { method:'PATCH', headers:{'Prefer':'return=minimal'}, body:JSON.stringify({ player_id:newUUID }) });
-        // Transfer bans
         await sbFetch(`banned?player_id=eq.${oldUUID}`, { method:'PATCH', headers:{'Prefer':'return=minimal'}, body:JSON.stringify({ player_id:newUUID }) });
-        // Delete old player
+        await sbFetch(`admin_actions?player_id=eq.${oldUUID}`, { method:'PATCH', headers:{'Prefer':'return=minimal'}, body:JSON.stringify({ player_id:newUUID }) });
+        // Delete old player row
         await sbFetch(`players?id=eq.${oldUUID}`, { method:'DELETE' });
 
-        _res('#_mod-result', `✅ Transferred ${old.name} → new UUID`);
+        _res('#_mod-result', `✅ Transferred ${old.name} → new UUID. Tell them to set localStorage: localStorage.setItem("stack:uuid","${newUUID}")`);
         _setStatus('Transfer done', '#10b981');
       } catch(e) { _res('#_mod-result','❌ Transfer failed: ' + e.message, false); }
     };
