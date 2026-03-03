@@ -463,8 +463,8 @@ function getPal() { return PALETTES.find(p=>p.id===activePal).c; }
 function nextCol() { const c=getPal(); return c[(colorIdx++)%c.length]; }
 
 function calcSpeed() {
-  const base = 0.023 + score * 0.00025;
-  const cap  = 0.047;
+  const base = 0.018 + score * 0.00018;
+  const cap  = 0.052;
   let spd = Math.min(base, cap);
 
   const phase = score % 8;
