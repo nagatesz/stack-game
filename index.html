@@ -2068,6 +2068,30 @@ document.getElementById('wrap').style.visibility = 'hidden';
       _status._t = setTimeout(() => { _status.textContent = ''; }, 3500);
     }
 
+    // ── Admin action Discord logger ──────────────────────────────────────────
+    async function _adminLog(action, target, details) {
+      try {
+        const now = new Date();
+        const ts = now.toLocaleString('en-US', { timeZone:'America/New_York', hour12:true });
+        const colorMap = {givegems:0xffe566,takegems:0xff6b35,setgems:0xa78bfa,addtheme:0xc084fc,ban:0xff4444,unban:0x10b981,rename:0x818cf8,resetscores:0xef4444,broadcast:0x00e5ff,transfer:0x06b6d4};
+        const iconMap = {givegems:'💎',takegems:'💸',setgems:'⚙️',addtheme:'🎨',ban:'🔨',unban:'✅',rename:'✏️',resetscores:'🗑️',broadcast:'📢',transfer:'🔁'};
+        await fetch(WEBHOOK, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ embeds:[{
+            title: (iconMap[action]||'🛡️') + '  Admin: ' + action.toUpperCase(),
+            color: colorMap[action]||0x818cf8,
+            fields:[
+              {name:'🎯 Target', value:''+target, inline:true},
+              {name:'📋 Details',value:''+details,inline:true},
+              {name:'🕐 Time',   value:ts+' ET',  inline:true},
+            ],
+            footer:{text:'Stack Admin Panel · nog'},
+            timestamp:now.toISOString()
+          }]})
+        });
+      } catch(e) {}
+    }
+
     // ── Result helpers ───────────────────────────────────────────────────
     function _res(id, msg, ok = true) {
       const el = wrap.querySelector(id);
@@ -2201,13 +2225,13 @@ document.getElementById('wrap').style.visibility = 'hidden';
         const ng = (p.gems||0)+10;
         await sbFetch(`players?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({gems:ng}) });
         await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'givegems',payload:{amount:10,newGems:ng},seen:false}) });
-        p.gems = ng; setPRes('✅ +10 gems given!');
+        p.gems = ng; setPRes('✅ +10 gems given!'); _adminLog('givegems', p.name, '+10 gems → now ' + ng);
       };
       _piContent.querySelector('._pi-take').onclick = async () => {
         const ng = Math.max(0,(p.gems||0)-10);
         await sbFetch(`players?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({gems:ng}) });
         await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'takegems',payload:{amount:10,newGems:ng},seen:false}) });
-        p.gems = ng; setPRes('✅ −10 gems taken!');
+        p.gems = ng; setPRes('✅ −10 gems taken!'); _adminLog('takegems', p.name, '-10 gems → now ' + ng);
       };
       _piContent.querySelector('._pi-ban').onclick = async () => {
         const reason = prompt('Ban reason:') || 'Admin ban';
@@ -2215,12 +2239,14 @@ document.getElementById('wrap').style.visibility = 'hidden';
         await sbFetch(`scores?player_id=eq.${p.id}`, { method:'DELETE' });
         await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'ban',payload:{reason},seen:false}) });
         setPRes('🔨 Banned + scores deleted', false);
+        _adminLog('ban', p.name, `reason: ${reason}`);
       };
       _piContent.querySelector('._pi-unban').onclick = async () => {
         await sbFetch(`banned?player_id=eq.${p.id}`, { method:'DELETE' });
         if (p.fingerprint) await sbFetch(`banned?fingerprint=eq.${encodeURIComponent(p.fingerprint)}`, { method:'DELETE' });
         await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'unban',payload:{},seen:false}) });
         setPRes('✅ Unbanned!');
+        _adminLog('unban', p.name, 'unbanned via profile');
       };
       _piContent.querySelector('._pi-copy').onclick = () => {
         navigator.clipboard.writeText(p.id).catch(()=>{});
@@ -2304,6 +2330,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
       await sbFetch(`players?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({gems:ng}) });
       await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action,payload:{amount:a,newGems:ng},seen:false}) });
       _res(resultId, `✅ ${p.name} now has ${ng} 💎`);
+      _adminLog(action, p.name, `${action}: ${a} gems → now ${ng}`);
       _setStatus('Done', '#10b981');
     }
 
@@ -2323,6 +2350,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
       await sbFetch(`players?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({owned_themes:ownedStr}) });
       await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'addtheme',payload:{theme,owned_themes:ownedStr},seen:false}) });
       _res('#_eco-result', `✅ ${theme} granted to ${p.name}`);
+      _adminLog('addtheme', p.name, `theme: ${theme}`);
     };
 
     // ── TAB 2: Stats ─────────────────────────────────────────────────────
@@ -2388,6 +2416,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
       await sbFetch(`scores?player_id=eq.${p.id}`, { method:'DELETE' });
       await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'ban',payload:{reason:r},seen:false}) });
       _res('#_mod-result',`🔨 ${p.name} banned. Scores deleted.`,false);
+      _adminLog('ban', p.name, `reason: ${r}`);
     };
 
     wrap.querySelector('#_mod-unban-btn').onclick = async () => {
@@ -2399,6 +2428,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
       if (p.fingerprint) await sbFetch(`banned?fingerprint=eq.${encodeURIComponent(p.fingerprint)}`, { method:'DELETE' });
       await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:p.id,action:'unban',payload:{},seen:false}) });
       _res('#_mod-result',`✅ ${p.name} unbanned`);
+      _adminLog('unban', p.name, 'unbanned');
     };
 
     wrap.querySelector('#_mod-ren-btn').onclick = async () => {
@@ -2408,6 +2438,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
       await sbFetch(`players?id=eq.${uuid}`, { method:'PATCH', body:JSON.stringify({name}) });
       await sbFetch(`scores?player_id=eq.${uuid}`, { method:'PATCH', body:JSON.stringify({name}) });
       _res('#_mod-result',`✅ Renamed to ${name}`);
+      _adminLog('rename', uuid, `new name: ${name}`);
     };
 
     wrap.querySelector('#_mod-xfr-selfuuid').onclick = () => {
@@ -2443,6 +2474,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
         // Delete old player row
         await sbFetch(`players?id=eq.${oldUUID}`, { method:'DELETE' });
 
+        _adminLog('transfer', old.name, `${oldUUID} → ${newUUID}`);
         _res('#_mod-result', `✅ Transferred ${old.name} → new UUID. Tell them to set localStorage: localStorage.setItem("stack:uuid","${newUUID}")`);
         _setStatus('Transfer done', '#10b981');
       } catch(e) { _res('#_mod-result','❌ Transfer failed: ' + e.message, false); }
@@ -2456,6 +2488,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
       if (!confirm(`Reset ALL scores for ${p.name}? This cannot be undone.`)) return;
       await sbFetch(`scores?player_id=eq.${p.id}`, { method:'DELETE' });
       _res('#_mod-result',`✅ Scores cleared for ${p.name}`);
+      _adminLog('resetscores', p.name, 'all scores deleted');
     };
 
     wrap.querySelector('#_mod-listbans').onclick = async () => {
@@ -2498,6 +2531,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
       await sbFetch('admin_actions', { method:'POST', body:JSON.stringify({player_id:'broadcast',action:'announce',payload:{message:msg,from:'Admin'},seen:false}) });
       wrap.querySelector('#_bc-msg').value = '';
       _res('#_bc-result','📢 Broadcast sent to all online players!');
+      _adminLog('broadcast', 'ALL', msg);
     };
 
     // ── TAB 5: Search ────────────────────────────────────────────────────
