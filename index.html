@@ -1082,7 +1082,7 @@ function startRealtimeListener() {
       await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
         method: 'PATCH',
         headers: { 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ last_seen: new Date().toISOString() })
+        body: JSON.stringify({ last_seen: new Date().toISOString(), updated_at: new Date().toISOString() })
       });
     } catch(e) {}
   }, 60000);
@@ -1093,7 +1093,7 @@ function startRealtimeListener() {
         await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
           method: 'PATCH',
           headers: { 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ last_seen: new Date().toISOString() })
+          body: JSON.stringify({ last_seen: new Date().toISOString(), updated_at: new Date().toISOString() })
         });
       } catch(e) {}
     }
@@ -2110,16 +2110,17 @@ document.getElementById('wrap').style.visibility = 'hidden';
     let _piPollInterval = null;
 
     function _isOnline(p) {
+      // Prefer last_seen (heartbeat), fall back to updated_at
       const t = p.last_seen || p.updated_at;
       if (!t) return false;
-      return (Date.now() - new Date(t).getTime()) < 3 * 60 * 1000;
+      return (Date.now() - new Date(t).getTime()) < 5 * 60 * 1000;
     }
 
     function _onlinePill(p) {
       const online = _isOnline(p);
       return online
-        ? `<span class="_adm-pill" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">● ONLINE</span>`
-        : `<span class="_adm-pill" style="background:rgba(100,116,139,0.15);color:rgba(148,163,184,0.5);border:1px solid rgba(100,116,139,0.2);">○ OFFLINE</span>`;
+        ? `<span class="_adm-pill" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">ONLINE</span>`
+        : `<span class="_adm-pill" style="background:rgba(100,116,139,0.15);color:rgba(148,163,184,0.5);border:1px solid rgba(100,116,139,0.2);">OFFLINE</span>`;
     }
 
     async function _showPI(p) {
