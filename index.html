@@ -1075,6 +1075,30 @@ function startRealtimeListener() {
 
   checkBanned();
 
+  // Heartbeat — updates updated_at every 60s so online detection works
+  setInterval(async () => {
+    if (!PLAYER_UUID || !playerName) return;
+    try {
+      await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
+        method: 'PATCH',
+        headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ last_seen: new Date().toISOString() })
+      });
+    } catch(e) {}
+  }, 60000);
+  // Fire once immediately on load
+  setTimeout(async () => {
+    if (PLAYER_UUID && playerName) {
+      try {
+        await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
+          method: 'PATCH',
+          headers: { 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ last_seen: new Date().toISOString() })
+        });
+      } catch(e) {}
+    }
+  }, 3000);
+
   setTimeout(async () => {
     try {
       const rows = await sbFetch(`players?id=eq.${PLAYER_UUID}&select=gems`);
@@ -2085,13 +2109,14 @@ document.getElementById('wrap').style.visibility = 'hidden';
 
     let _piPollInterval = null;
 
-    function _isOnline(updatedAt) {
-      if (!updatedAt) return false;
-      return (Date.now() - new Date(updatedAt).getTime()) < 10 * 60 * 1000;
+    function _isOnline(p) {
+      const t = p.last_seen || p.updated_at;
+      if (!t) return false;
+      return (Date.now() - new Date(t).getTime()) < 3 * 60 * 1000;
     }
 
-    function _onlinePill(updatedAt) {
-      const online = _isOnline(updatedAt);
+    function _onlinePill(p) {
+      const online = _isOnline(p);
       return online
         ? `<span class="_adm-pill" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">● ONLINE</span>`
         : `<span class="_adm-pill" style="background:rgba(100,116,139,0.15);color:rgba(148,163,184,0.5);border:1px solid rgba(100,116,139,0.2);">○ OFFLINE</span>`;
@@ -2137,7 +2162,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
           <div style="flex:1;min-width:0;">
             <div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:0.03em;">${p.name}</div>
             <div style="display:flex;gap:6px;align-items:center;margin-top:3px;">
-              <span id="_pi-online-pill">${_onlinePill(p.updated_at)}</span>
+              <span id="_pi-online-pill">${_onlinePill(p)}</span>
               <span style="font-size:11px;color:rgba(148,163,184,0.35);">${p.theme || 'classic'}</span>
             </div>
           </div>
@@ -2200,10 +2225,10 @@ document.getElementById('wrap').style.visibility = 'hidden';
       // Live online/offline polling every 10s
       _piPollInterval = setInterval(async () => {
         try {
-          const r = await sbFetch(`players?id=eq.${p.id}&select=updated_at`);
+          const r = await sbFetch(`players?id=eq.${p.id}&select=updated_at,last_seen`);
           if (r && r.length) {
             const pill = _piContent.querySelector('#_pi-online-pill');
-            if (pill) pill.innerHTML = _onlinePill(r[0].updated_at);
+            if (pill) pill.innerHTML = _onlinePill(r[0]);
           }
         } catch(e) {}
       }, 10000);
