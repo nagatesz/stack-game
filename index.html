@@ -2087,7 +2087,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
 
     function _isOnline(updatedAt) {
       if (!updatedAt) return false;
-      return (Date.now() - new Date(updatedAt).getTime()) < 3 * 60 * 1000;
+      return (Date.now() - new Date(updatedAt).getTime()) < 10 * 60 * 1000;
     }
 
     function _onlinePill(updatedAt) {
@@ -2138,7 +2138,6 @@ document.getElementById('wrap').style.visibility = 'hidden';
             <div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:0.03em;">${p.name}</div>
             <div style="display:flex;gap:6px;align-items:center;margin-top:3px;">
               <span id="_pi-online-pill">${_onlinePill(p.updated_at)}</span>
-              ${_banPill(!!banInfo)}
               <span style="font-size:11px;color:rgba(148,163,184,0.35);">${p.theme || 'classic'}</span>
             </div>
           </div>
