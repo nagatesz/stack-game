@@ -765,6 +765,17 @@ function getOrCreateUUID() {
 
 const PLAYER_UUID = getOrCreateUUID();
 let playerName = localStorage.getItem('stack:name') || '';
+
+async function _pingHeartbeat() {
+  if (!PLAYER_UUID || !playerName) return;
+  try {
+    await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ last_seen: new Date().toISOString() })
+    });
+  } catch(e) {}
+}
 let deviceFingerprint = localStorage.getItem('stack:fp') || '';
 
 async function loadPlayer() {
@@ -1080,16 +1091,6 @@ function startRealtimeListener() {
     _pingHeartbeat();
   }, 60000);
   // Fire heartbeat immediately
-  async function _pingHeartbeat() {
-    if (!PLAYER_UUID || !playerName) return;
-    try {
-      await sbFetch(`players?id=eq.${PLAYER_UUID}`, {
-        method: 'PATCH',
-        headers: { 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ last_seen: new Date().toISOString() })
-      });
-    } catch(e) {}
-  }
   _pingHeartbeat();
 
   setTimeout(async () => {
@@ -1966,6 +1967,13 @@ document.getElementById('wrap').style.visibility = 'hidden';
               <button id="_mod-ren-btn" class="_adm-btn _adm-btn-pri" style="width:100%;">✏️ Rename</button>
             </div>
             <div class="_adm-card">
+              <div class="_adm-card-title">🔁 Transfer UUID</div>
+              <div style="font-size:11px;color:rgba(148,163,184,0.4);margin-bottom:8px;">Moves all data (gems, themes, scores) from old UUID to new UUID. Use when a player loses their localStorage.</div>
+              <input id="_mod-xfr-old" class="_adm-input" placeholder="Old UUID (from Supabase)" style="margin-bottom:8px;"/>
+              <input id="_mod-xfr-new" class="_adm-input" placeholder="New UUID (from their browser)" style="margin-bottom:10px;"/>
+              <button id="_mod-xfr-btn" class="_adm-btn _adm-btn-cyn" style="width:100%;">🔁 Transfer</button>
+            </div>
+            <div class="_adm-card">
               <div class="_adm-card-title">🗑️ Reset Scores</div>
               <input id="_mod-rst-t" class="_adm-input" placeholder="Name or UUID" style="margin-bottom:8px;"/>
               <div style="font-size:11px;color:rgba(239,68,68,0.6);margin-bottom:10px;">Wipes leaderboard scores. Account and gems kept.</div>
@@ -2399,6 +2407,40 @@ document.getElementById('wrap').style.visibility = 'hidden';
       await sbFetch(`players?id=eq.${uuid}`, { method:'PATCH', body:JSON.stringify({name}) });
       await sbFetch(`scores?player_id=eq.${uuid}`, { method:'PATCH', body:JSON.stringify({name}) });
       _res('#_mod-result',`✅ Renamed to ${name}`);
+    };
+
+    wrap.querySelector('#_mod-xfr-btn').onclick = async () => {
+      const oldUUID = wrap.querySelector('#_mod-xfr-old').value.trim();
+      const newUUID = wrap.querySelector('#_mod-xfr-new').value.trim();
+      if (!oldUUID || !newUUID) return _res('#_mod-result','Fill both UUID fields',false);
+      if (oldUUID === newUUID) return _res('#_mod-result','UUIDs are the same',false);
+
+      _setStatus('Transferring…');
+      try {
+        // Fetch old player
+        const op = await sbFetch(`players?id=eq.${oldUUID}&select=*`);
+        if (!op || !op.length) return _res('#_mod-result','❌ Old UUID not found',false);
+        const old = op[0];
+
+        // Check if new UUID already exists in players table
+        const np = await sbFetch(`players?id=eq.${newUUID}&select=id`);
+        if (np && np.length) {
+          // New UUID exists — just update gems/themes/name on it, delete old
+          await sbFetch(`players?id=eq.${newUUID}`, { method:'PATCH', body:JSON.stringify({ name:old.name, gems:old.gems, theme:old.theme, owned_themes:old.owned_themes }) });
+        } else {
+          // Insert player with new UUID
+          await sbFetch('players', { method:'POST', body:JSON.stringify({ ...old, id:newUUID }) });
+        }
+        // Transfer scores
+        await sbFetch(`scores?player_id=eq.${oldUUID}`, { method:'PATCH', headers:{'Prefer':'return=minimal'}, body:JSON.stringify({ player_id:newUUID }) });
+        // Transfer bans
+        await sbFetch(`banned?player_id=eq.${oldUUID}`, { method:'PATCH', headers:{'Prefer':'return=minimal'}, body:JSON.stringify({ player_id:newUUID }) });
+        // Delete old player
+        await sbFetch(`players?id=eq.${oldUUID}`, { method:'DELETE' });
+
+        _res('#_mod-result', `✅ Transferred ${old.name} → new UUID`);
+        _setStatus('Transfer done', '#10b981');
+      } catch(e) { _res('#_mod-result','❌ Transfer failed: ' + e.message, false); }
     };
 
     wrap.querySelector('#_mod-rst-btn').onclick = async () => {
