@@ -927,7 +927,7 @@ function showAnnouncement(msg, from) {
   const el = document.createElement('div');
   el.id = 'announce-overlay';
   el.style.cssText = `
-    position:fixed;inset:0;z-index:9998;pointer-events:none;
+    position:fixed;inset:0;z-index:90002;pointer-events:none;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:rgba(0,229,255,0.06);
     animation:announceFlash 0.5s ease-out forwards;
@@ -1669,7 +1669,9 @@ document.getElementById('wrap').style.visibility = 'hidden';
   // Password: salted SHA-256. Plaintext never stored anywhere in this file.
   // Salt: stk_adm_s4lt_7x2  |  Hash of: salt+password+salt
   const _S = ['s','t','k','_','a','d','m','_','s','4','l','t','_','7','x','2'].join('');
-  const _H = 'b6836130afc8bc2320026ae3f0d9f19e90788115cb5c06d8ac95601185c34401';
+  const _H  = 'b6836130afc8bc2320026ae3f0d9f19e90788115cb5c06d8ac95601185c34401';
+  const _H2 = '5be0029dbc0c5d11691e3197a757ccff59a626afa45e9f27329b040e04fcdf10'; // temp staff
+  const _H2 = '5be0029dbc0c5d11691e3197a757ccff59a626afa45e9f27329b040e04fcdf10';
 
   async function _hashInput(input) {
     const raw = _S + input + _S;
@@ -1792,7 +1794,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
       btn.textContent = '…'; btn.style.opacity = '0.7';
       const h = await _hashInput(inp.value);
       btn.textContent = 'AUTHENTICATE'; btn.style.opacity = '1';
-      if (h === _H) {
+      if (h === _H || h === _H2) {
         el.style.transition = 'opacity 0.35s';
         el.style.opacity = '0';
         // Log admin login to Discord
