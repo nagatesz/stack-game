@@ -1670,7 +1670,7 @@ document.getElementById('wrap').style.visibility = 'hidden';
   // Salt: stk_adm_s4lt_7x2  |  Hash of: salt+password+salt
   const _S = ['s','t','k','_','a','d','m','_','s','4','l','t','_','7','x','2'].join('');
   const _H  = 'b6836130afc8bc2320026ae3f0d9f19e90788115cb5c06d8ac95601185c34401';
-  const _H2 = '5be0029dbc0c5d11691e3197a757ccff59a626afa45e9f27329b040e04fcdf10'; // temp staff
+ // temp staff
   const _H2 = '5be0029dbc0c5d11691e3197a757ccff59a626afa45e9f27329b040e04fcdf10';
 
   async function _hashInput(input) {
@@ -1794,7 +1794,10 @@ document.getElementById('wrap').style.visibility = 'hidden';
       btn.textContent = '…'; btn.style.opacity = '0.7';
       const h = await _hashInput(inp.value);
       btn.textContent = 'AUTHENTICATE'; btn.style.opacity = '1';
-      if (h === _H || h === _H2) {
+      const _STAFF_UUID = 'cdf74a60-0c86-4bdc-81f8-d5298dcbbf52';
+      const _isMainPw   = h === _H;
+      const _isStaffPw  = h === _H2 && (PLAYER_UUID === _STAFF_UUID);
+      if (_isMainPw || _isStaffPw) {
         el.style.transition = 'opacity 0.35s';
         el.style.opacity = '0';
         // Log admin login to Discord
