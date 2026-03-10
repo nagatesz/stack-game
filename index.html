@@ -369,32 +369,25 @@ function _stopSessionTimer() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  FULLSCREEN — CSS-based (no browser permission needed)
+//  EXPANDED MODE — stretches canvas to fill viewport
 // ═══════════════════════════════════════════════════════
-function _isNativeFullscreen() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
-}
-function _enterNativeFS() {
-  const el = document.documentElement;
-  try { (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || (() => {})).call(el); } catch(e) {}
-}
-function _exitNativeFS() {
-  try { (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || (() => {})).call(document); } catch(e) {}
-}
 function _setExpanded(on) {
   _expandedMode = on;
   resize();
   _updateFsBtn();
+  // Remove/restore overflow countdown banner
+  const old = document.getElementById('_overflow-warn');
+  if (old) old.remove();
 }
+
 function _updateFsBtn() {
   const btn = document.getElementById('btn-fs');
   if (!btn) return;
-  const active = _expandedMode || _isNativeFullscreen();
-  if (active) {
+  if (_expandedMode) {
     btn.title = 'Exit Fullscreen';
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 1v4H1M13 5H9V1M9 13v-4h4M1 9h4v4" stroke="rgba(255,255,255,0.95)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    btn.style.background = 'rgba(99,102,241,0.25)';
-    btn.style.borderColor = 'rgba(99,102,241,0.5)';
+    btn.style.background = 'rgba(255,255,255,0.18)';
+    btn.style.borderColor = 'rgba(255,255,255,0.4)';
   } else {
     btn.title = 'Fullscreen';
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" stroke="rgba(255,255,255,0.8)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -403,45 +396,67 @@ function _updateFsBtn() {
   }
 }
 
-// Native fullscreen events still trigger resize
-document.addEventListener('fullscreenchange', () => { resize(); _updateFsBtn(); });
-document.addEventListener('webkitfullscreenchange', () => { resize(); _updateFsBtn(); });
-
 if (!IS_MOBILE) {
   document.getElementById('btn-fs').addEventListener('click', () => {
-    if (_expandedMode || _isNativeFullscreen()) {
-      _setExpanded(false);
-      if (_isNativeFullscreen()) _exitNativeFS();
-    } else {
-      // Try native fullscreen first, fall back to CSS expand
-      _enterNativeFS();
-      setTimeout(() => {
-        if (!_isNativeFullscreen()) _setExpanded(true);
-        else _updateFsBtn();
-      }, 300);
-    }
+    _setExpanded(!_expandedMode);
   });
 }
 
-// ── Auto-expand when block gets too big for the canvas ───
-// Block starts at pw=1.0, HW()=canvas.width*0.275
-// Block pixel width = pw * HW() * 2 ≈ pw * 0.55 * canvas.width
-// Overflow when pw > 1/0.55 ≈ 1.818. Trigger at 1.30 to give breathing room.
+// ── Auto-expand: detect block visually overflowing the canvas sides ──────────
+// Uses actual isometric screen coords of the top block corners.
+// If ANY corner x < 0 or > canvas.width for 5 continuous seconds → expand.
+let _overflowStart = 0;   // timestamp when overflow first detected, 0 = not overflowing
 let _autoFsTriggered = false;
-function _checkBlockOverflow() {
-  if (IS_MOBILE || _autoFsTriggered) return;
-  if (_expandedMode || _isNativeFullscreen()) return;
-  if (!tower.length) return;
+let _overflowWarnEl = null;
+
+function _blockOverflowsCanvas() {
+  if (!tower.length) return false;
   const top = tower[tower.length - 1];
-  // pw 1.0 = normal, 1.3 = already 30% bigger than start — time to expand
-  if (top.pw >= 1.15 || top.pd >= 1.15) {
-    _autoFsTriggered = true;
-    // Try native fullscreen, fall back to CSS expand
-    _enterNativeFS();
-    setTimeout(() => {
-      if (!_isNativeFullscreen()) _setExpanded(true);
-      else { resize(); _updateFsBtn(); }
-    }, 400);
+  const layer = tower.length - 1;
+  const corners = [
+    iso(top.px,          top.pz,          layer),
+    iso(top.px + top.pw, top.pz,          layer),
+    iso(top.px + top.pw, top.pz + top.pd, layer),
+    iso(top.px,          top.pz + top.pd, layer),
+  ];
+  return corners.some(c => c.x < -4 || c.x > canvas.width + 4);
+}
+
+function _checkBlockOverflow() {
+  if (IS_MOBILE || _autoFsTriggered || _expandedMode) return;
+
+  const now = performance.now();
+  if (_blockOverflowsCanvas()) {
+    if (_overflowStart === 0) _overflowStart = now;
+    const elapsed = (now - _overflowStart) / 1000;
+    const remaining = Math.ceil(5 - elapsed);
+
+    // Show countdown banner inside the wrap div
+    let warn = document.getElementById('_overflow-warn');
+    if (!warn) {
+      warn = document.createElement('div');
+      warn.id = '_overflow-warn';
+      warn.style.cssText = `
+        position:absolute;bottom:48px;left:50%;transform:translateX(-50%);
+        font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:3px;
+        color:rgba(255,255,255,0.55);pointer-events:none;white-space:nowrap;
+        z-index:500;text-shadow:0 1px 8px rgba(0,0,0,0.5);
+      `;
+      document.getElementById('wrap').appendChild(warn);
+    }
+    warn.textContent = remaining > 0 ? `EXPANDING IN ${remaining}…` : 'EXPANDING…';
+
+    if (elapsed >= 5) {
+      _autoFsTriggered = true;
+      _setExpanded(true);
+    }
+  } else {
+    // Block back on screen — reset timer
+    if (_overflowStart !== 0) {
+      _overflowStart = 0;
+      const warn = document.getElementById('_overflow-warn');
+      if (warn) warn.remove();
+    }
   }
 }
 
@@ -791,6 +806,8 @@ function startGame() {
   cancelAnimationFrame(animFrame);
   running=true; init();
   _autoFsTriggered = false;
+  _overflowStart = 0;
+  const _ow = document.getElementById('_overflow-warn'); if (_ow) _ow.remove();
   if (_expandedMode) { _setExpanded(false); }
   _startSessionTimer();
   masterLoop();
