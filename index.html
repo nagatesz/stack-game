@@ -316,9 +316,9 @@ let _expandedMode = false;
 function resize() {
   let cw, ch;
   if (_expandedMode) {
-    cw = window.innerWidth; ch = window.innerHeight;
-    if (cw / ch > 9/16) { cw = Math.floor(ch * 9/16); } else { ch = Math.floor(cw * 16/9); }
-    if (ch > window.innerHeight) { ch = window.innerHeight; cw = window.innerWidth; }
+    // Fill the ENTIRE viewport — stretch to fit, no aspect ratio lock
+    cw = window.innerWidth;
+    ch = window.innerHeight;
   } else {
     cw = Math.min(window.innerWidth, 420);
     ch = cw * (16/9);
@@ -434,7 +434,7 @@ function _checkBlockOverflow() {
   if (!tower.length) return;
   const top = tower[tower.length - 1];
   // pw 1.0 = normal, 1.3 = already 30% bigger than start — time to expand
-  if (top.pw >= 1.30 || top.pd >= 1.30) {
+  if (top.pw >= 1.15 || top.pd >= 1.15) {
     _autoFsTriggered = true;
     // Try native fullscreen, fall back to CSS expand
     _enterNativeFS();
