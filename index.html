@@ -463,9 +463,9 @@ function _checkBlockOverflow() {
 // ═══════════════════════════════════════════════════════
 //  ISO PROJECTION
 // ═══════════════════════════════════════════════════════
-function HW()      { return canvas.width * 0.275; }
+function HW()      { return _expandedMode ? Math.min(canvas.width * 0.275, 115) : canvas.width * 0.275; }
 function HH()      { return HW() * 0.5; }
-function WALL_PX() { return canvas.width * 0.055; }
+function WALL_PX() { return _expandedMode ? Math.min(canvas.width * 0.055, 23)  : canvas.width * 0.055; }
 function OX()      { return canvas.width  * 0.50; }
 function OY()      { return canvas.height * 0.60 + camY; }
 let camY = 0;
